@@ -5,17 +5,19 @@ import com.cargodelivery.dao.UserDao;
 import com.cargodelivery.dao.entity.User;
 import com.cargodelivery.dao.entity.UserRole;
 import com.cargodelivery.exception.DBException;
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 public class UserDaoImpl implements UserDao {
 
-    private static final Logger logger = LogManager.getLogger();
+    private static final Logger LOG = LoggerFactory.getLogger(UserDaoImpl.class);
 
     @Override
     public void create(User user) throws DBException {
@@ -31,11 +33,10 @@ public class UserDaoImpl implements UserDao {
                 preparedStatement.setString(++i, user.getUserRole().toString());
                 preparedStatement.setBigDecimal(++i, user.getBalance());
                 preparedStatement.executeUpdate();
-                logger.log(Level.INFO, "User signup operation was successful");
             }
         } catch (SQLException e) {
-            logger.log(Level.ERROR, "Failed to create new User in database", e);
-            throw new DBException("Failed to create new User in database", e);
+            LOG.error("Failed to create new User in database user={}", user, e);
+            throw new DBException(String.format("Failed to create new User in database user=%s", user), e);
         }
     }
 
@@ -48,28 +49,15 @@ public class UserDaoImpl implements UserDao {
                 preparedStatement.setString(1, user.getId());
                 ResultSet resultSet = preparedStatement.executeQuery();
                 while (resultSet.next()) {
-                    User userDetails = buildUser(resultSet);
+                    User userDetails = build(resultSet);
                     result = Optional.of(userDetails);
                 }
             }
         } catch (SQLException e) {
-            logger.log(Level.ERROR, "Failed to find user by his id", e);
-            throw new DBException("Failed to find user by his id", e);
+            LOG.error("Failed to find user by his id, user={}", user, e);
+            throw new DBException(String.format("Failed to find user by his id, user=%s", user), e);
         }
-        logger.log(Level.INFO, "Successfully read user details from database");
         return result;
-    }
-
-    private User buildUser(ResultSet resultSet) throws SQLException {
-        return new User(
-                resultSet.getString("id"),
-                resultSet.getString("name"),
-                resultSet.getString("surname"),
-                resultSet.getString("email"),
-                resultSet.getString("password"),
-                UserRole.valueOf(resultSet.getString("role")),
-                resultSet.getBigDecimal("balance")
-        );
     }
 
     @Override
@@ -79,7 +67,7 @@ public class UserDaoImpl implements UserDao {
         int i = 0;
         try (var connection = HikariCP.getHikariConnection()) {
             try (var preparedStatement = connection.prepareStatement(sql,
-                    ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE)){
+                    ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE)) {
                 preparedStatement.setString(++i, user.getId());
                 var resultSet = preparedStatement.executeQuery();
                 while (resultSet.next()) {
@@ -87,10 +75,9 @@ public class UserDaoImpl implements UserDao {
                 }
             }
         } catch (SQLException e) {
-            logger.log(Level.ERROR, "Failed to check user existing", e);
-            throw new DBException("Failed to check user existing", e);
+            LOG.error("Failed to check user existing, user={}", user, e);
+            throw new DBException(String.format("Failed to check user existing, user=%s", user), e);
         }
-        logger.log(Level.INFO, "Successfully execute isUserExist query");
         return isExist;
     }
 
@@ -107,12 +94,75 @@ public class UserDaoImpl implements UserDao {
                 }
             }
         } catch (SQLException e) {
-            logger.log(Level.ERROR, "Failed to get user password", e);
-            throw new DBException("Failed to get user password", e);
+            LOG.error("Failed to get user password, user={}", user, e);
+            throw new DBException(String.format("Failed to get user password, user=%s", user), e);
         }
-        logger.log(Level.INFO, "Successfully get user password");
         return password;
     }
 
+    @Override
+    public List<User> readAllUsers() throws DBException {
+        String sql = "SELECT * FROM user";
+        List<User> users = new ArrayList<>(5);
+        try (var connection = HikariCP.getHikariConnection()) {
+            try (var preparedStatement = connection.prepareStatement(sql)) {
+                ResultSet resultSet = preparedStatement.executeQuery();
+                while (resultSet.next()) {
+                    users.add(build(resultSet));
+                }
+            }
+        } catch (SQLException e) {
+            LOG.error("Failed to read all users from database", e);
+            throw new DBException("Failed to read all users from database", e);
+        }
+        return users;
+    }
+
+    @Override
+    public BigDecimal getUserBalance(User user) throws DBException {
+        String sql = "SELECT balance FROM user WHERE id = ?";
+        BigDecimal userBalance = null;
+        try (var connection = HikariCP.getHikariConnection()) {
+            try (var preparedStatement = connection.prepareStatement(sql)) {
+                preparedStatement.setString(1, user.getId());
+                ResultSet resultSet = preparedStatement.executeQuery();
+                while (resultSet.next()) {
+                    userBalance = resultSet.getBigDecimal("balance");
+                }
+            }
+        } catch (SQLException e) {
+            LOG.error("Failed to get user's balance, user={}", user, e);
+            throw new DBException(String.format("Failed to get user's balance, user=%s", user), e);
+        }
+        return userBalance;
+    }
+
+    @Override
+    public void updateUserBalance(User user, BigDecimal userBalance) throws DBException {
+        String sql = "UPDATE user SET balance = ? WHERE id = ?;";
+        int i = 0;
+        try (var connection = HikariCP.getHikariConnection()) {
+            try (var preparedStatement = connection.prepareStatement(sql)) {
+                preparedStatement.setBigDecimal(++i, userBalance);
+                preparedStatement.setString(++i, user.getId());
+                preparedStatement.executeUpdate();
+            }
+        } catch (SQLException e) {
+            LOG.error("Failed to update user's balance in database, user={}", user, e);
+            throw new DBException(String.format("Failed to update user's balance in database, user=%s", user), e);
+        }
+    }
+
+    private User build(ResultSet resultSet) throws SQLException {
+        return new User(
+                resultSet.getString("id"),
+                resultSet.getString("name"),
+                resultSet.getString("surname"),
+                resultSet.getString("email"),
+                resultSet.getString("password"),
+                UserRole.valueOf(resultSet.getString("role")),
+                resultSet.getBigDecimal("balance")
+        );
+    }
 
 }
