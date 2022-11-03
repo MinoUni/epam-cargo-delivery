@@ -1,37 +1,32 @@
 package com.cargodelivery.dao;
 
-import com.zaxxer.hikari.HikariConfig;
-import com.zaxxer.hikari.HikariDataSource;
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
+import javax.naming.Context;
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
+import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.Properties;
 
 public class HikariCP {
 
-    private static final Logger logger = LogManager.getLogger();
+    private static final Logger LOG = LoggerFactory.getLogger(HikariCP.class);
 
-    private static final HikariDataSource dataSource;
+    private static DataSource dataSource;
 
     private HikariCP() {}
 
     static {
-        var properties = new Properties();
         try {
-            var propertyFileInpStr = HikariCP.class
-                    .getClassLoader()
-                    .getResourceAsStream("datasource.properties");
-            properties.load(propertyFileInpStr);
-        } catch (IOException e) {
-            logger.log(Level.ERROR, "Failed to read database properties from property file", e);
+            Context context = new InitialContext();
+            Context envContext = (Context) context.lookup("java:comp/env");
+            dataSource = (DataSource) envContext.lookup("jdbc/epam");
+            LOG.info("OK, dataSource={}", dataSource);
+        } catch (NamingException e) {
+            LOG.error("Error", e);
         }
-        var config = new HikariConfig(properties);
-        dataSource = new HikariDataSource(config);
-        logger.log(Level.INFO, "Successfully read property file and initialize datasource");
     }
 
     public static Connection getHikariConnection() throws SQLException {
