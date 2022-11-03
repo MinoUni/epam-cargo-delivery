@@ -1,10 +1,16 @@
-@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@500&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400;500;700&display=swap");
+
+:root {
+    --bg: #0057b8;
+    --form: #ffc554;
+    --text-color: #1f1f1f;
+}
 
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: "Montserrat", sans-serif;
+    font-family: "Ubuntu", sans-serif;
 }
 
 body {
@@ -12,7 +18,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: #0057b8;
+    background-color: var(--bg);
 }
 
 .container {
@@ -21,7 +27,7 @@ body {
     width: 100%;
     padding: 25px;
     border-radius: 8px;
-    background-color: #ffd700;
+    background-color: var(--form);
 }
 
 .container header {
@@ -70,7 +76,6 @@ form .input-field {
     height: 100%;
     width: 100%;
     outline: none;
-    border: none;
     border-radius: 8px;
     padding: 0 15px;
     border: 1px solid #d1d1d1;
@@ -89,32 +94,6 @@ form .input-field {
     color: #919191;
     cursor: pointer;
     padding: 3px;
-}
-
-.field .error {
-    display: flex;
-    align-items: center;
-    margin-top: 6px;
-    color: #d93025;
-    font-size: 13px;
-    display: none;
-}
-
-.invalid .error {
-    display: flex;
-}
-
-.error .error-icon {
-    margin-right: 6px;
-    font-size: 15px;
-}
-
-.password-field .error {
-    align-items: flex-start;
-}
-
-.password-field .error-icon {
-    margin-top: 4px;
 }
 
 .input-field button {
@@ -151,7 +130,47 @@ form .input-field {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background-color: #ffd700;
+    background-color: var(--form);
     color: #0057b8;
     padding: 0 15px;
+}
+
+.back-home a {
+    position: relative;
+    height: 50px;
+    width: 100%;
+    margin-top: 20px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+}
+
+.back-home a:hover {
+    background-color: #00499c;
+}
+
+.home-link {
+    color: #fff;
+    background-color: #0057b8;
+}
+
+.home-link .icon {
+    height: 28px;
+    width: 28px;
+    color: #0057b8;
+    font-size: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #fff;
+}
+
+.icon {
+    position: absolute;
+    top: 50%;
+    left: 15px;
+    transform: translateY(-50%);
 }
