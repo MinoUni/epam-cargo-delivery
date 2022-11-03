@@ -2,42 +2,40 @@ package com.cargodelivery.service;
 
 import com.cargodelivery.dao.entity.User;
 import com.cargodelivery.exception.UserServiceException;
-import jakarta.servlet.http.HttpServletRequest;
 
-import java.util.Optional;
+import java.util.List;
 
 public interface UserService {
-
-    /**
-     * Find user in database by user login(id) and return as User model
-     *
-     * @param user model object of registration form page
-     * @return User object or empty Optional
-     * @throws UserServiceException error
-     */
-    Optional<User> findUser(User user) throws UserServiceException;
-
-    /**
-     * Request parameters from registration form validation
-     * Checks parameter for null & blank value by parameter name
-     *
-     * @param param   parameter name of request
-     * @param request Http request from registration page
-     * @return parameter value
-     * @throws IllegalArgumentException when parameter is null or blank
-     */
-    String checkRequestParam(HttpServletRequest request, String param);
 
     /**
      * Verify user existence
      * Hash user password
      * Add user into database
      *
-     * @param user model object of registration form page
-     * @throws UserServiceException when problem with insert user data into database or
-     *                              password hashing problem occurred
+     * @param user {@link User} model object of registration form page
+     * @throws UserServiceException when that user data are already in database
+     *                              or error with password hashing function
      */
     void signup(User user) throws UserServiceException;
 
+    /**
+     * Verify user existence
+     * Compare input password with user's hashed password
+     *
+     * @param user {@link User} model contains user's id and password
+     * @return {@link User} information object
+     * @throws UserServiceException when user not exists in database or
+     *                              password didn't match with hash
+     */
     User login(User user) throws UserServiceException;
+
+    /**
+     * Select all users info from database
+     * and collect to List
+     *
+     * @return {@link User} information objects as ArrayList
+     * @throws UserServiceException when error occur in database or
+     *                              SQL problem
+     */
+    List<User> findAllUsers() throws UserServiceException;
 }
