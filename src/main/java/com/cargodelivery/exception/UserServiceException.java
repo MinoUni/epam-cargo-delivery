@@ -6,11 +6,4 @@ public class UserServiceException extends Throwable{
         super(message);
     }
 
-    public UserServiceException(Throwable cause) {
-        super(cause);
-    }
-
-    public UserServiceException(String message, Throwable cause) {
-        super(message, cause);
-    }
 }
