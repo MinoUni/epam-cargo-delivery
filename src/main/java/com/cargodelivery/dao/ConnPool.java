@@ -10,26 +10,26 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
 
-public class HikariCP {
+public class ConnPool {
 
-    private static final Logger LOG = LoggerFactory.getLogger(HikariCP.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ConnPool.class);
 
     private static DataSource dataSource;
 
-    private HikariCP() {}
+    private ConnPool() {}
 
     static {
         try {
             Context context = new InitialContext();
             Context envContext = (Context) context.lookup("java:comp/env");
             dataSource = (DataSource) envContext.lookup("jdbc/epam");
-            LOG.info("OK, dataSource={}", dataSource);
+            LOG.info("Read datasource successfully, dataSource={}", dataSource);
         } catch (NamingException e) {
             LOG.error("Error", e);
         }
     }
 
-    public static Connection getHikariConnection() throws SQLException {
+    public static Connection getConnection() throws SQLException {
         return dataSource.getConnection();
     }
 
