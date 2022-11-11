@@ -1,21 +1,23 @@
 package com.cargodelivery.dao.impl;
 
-import com.cargodelivery.dao.HikariCP;
+import com.cargodelivery.dao.ConnPool;
 import com.cargodelivery.dao.OrderDao;
+import com.cargodelivery.dao.entity.Cargo;
 import com.cargodelivery.dao.entity.Order;
-import com.cargodelivery.dao.entity.OrderState;
 import com.cargodelivery.dao.entity.User;
+import com.cargodelivery.dao.entity.enums.OrderState;
 import com.cargodelivery.exception.DBException;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.math.BigDecimal;
 import java.sql.Date;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 public class OrderDaoImpl implements OrderDao {
 
@@ -23,26 +25,10 @@ public class OrderDaoImpl implements OrderDao {
 
     @Override
     public void save(Order order) throws DBException {
-        String addOrderSql = "INSERT INTO `order` VALUE (?, ?, ?, ?, ?, ?, ?, ?, ?);";
-        String getLastOrderIdSql = "SELECT id FROM `order` ORDER BY id desc LIMIT 1;";
-        int id = 0;
-        int i = 0;
-        try (var connection = HikariCP.getHikariConnection()) {
+        String addOrderSql = "INSERT INTO `orders`(users_id, route, registration_date, price, state, length, width, height, weight) VALUE (?,?,?,?,?,?,?,?,?);";
+        try (var connection = ConnPool.getConnection()) {
             try (var prepStatement = connection.prepareStatement(addOrderSql)) {
-                ResultSet resultSet = prepStatement.executeQuery(getLastOrderIdSql);
-                while (resultSet.next()) {
-                    id = resultSet.getInt("id");
-                }
-                prepStatement.setInt(++i, ++id);
-                prepStatement.setString(++i, order.getUserId());
-                prepStatement.setInt(++i, order.getCargoId());
-                prepStatement.setBigDecimal(++i, order.getPrice());
-                prepStatement.setString(++i, order.getRouteStart());
-                prepStatement.setString(++i, order.getRouteEnd());
-                prepStatement.setDate(++i,  new Date(order.getRegistrationDate().getTime()));
-                prepStatement.setDate(++i, new Date(order.getDeliveryDate().getTime()));
-                prepStatement.setString(++i, order.getState().toString());
-
+                mapFromModel(prepStatement, order);
                 prepStatement.executeUpdate();
                 LOG.log(Level.INFO, "Order created successfully!");
             }
@@ -53,14 +39,54 @@ public class OrderDaoImpl implements OrderDao {
     }
 
     @Override
-    public List<Order> findAllOrders() throws DBException {
-        String sql = "SELECT * FROM `order`";
-        List<Order> orders = new ArrayList<>(5);
-        try (var connection = HikariCP.getHikariConnection()) {
+    public List<Order> findAllBetween(int start, int numbOfRecords) throws DBException {
+        List<Order> orders = new ArrayList<>(numbOfRecords);
+        String sql = "SELECT * FROM `orders` LIMIT ?, ?;";
+        try (var conn = ConnPool.getConnection()) {
+            try (var prepStatement = conn.prepareStatement(sql)) {
+                prepStatement.setInt(1, start);
+                prepStatement.setInt(2, numbOfRecords);
+                ResultSet resSet = prepStatement.executeQuery();
+                while (resSet.next()) {
+                    orders.add(mapToModel(resSet));
+                }
+            }
+        } catch (SQLException e) {
+            LOG.error("Failed to obtain orders LIMIT", e);
+            throw new DBException("Failed to obtain orders LIMIT", e);
+        }
+        return orders;
+    }
+
+
+    @Override
+    public Optional<Order> findByField(Integer orderId) throws DBException {
+        String sql = "SELECT * FROM orders WHERE id = ?";
+        Optional<Order> order = Optional.empty();
+        try (var connection = ConnPool.getConnection()) {
             try (var preparedStatement = connection.prepareStatement(sql)) {
+                preparedStatement.setInt(1, orderId);
                 ResultSet resultSet = preparedStatement.executeQuery();
                 while (resultSet.next()) {
-                    orders.add(build(resultSet));
+                    order = Optional.ofNullable(mapToModel(resultSet));
+                }
+            }
+        } catch (SQLException e) {
+            LOG.error("Failed to find order by it id, orderId={}", orderId, e);
+            throw new DBException(String.format("Failed to find order by it id, orderId=%d", orderId), e);
+        }
+        return order;
+    }
+
+    @Override
+    public List<Order> findAllOrders() throws DBException {
+        String sql = "SELECT * FROM `orders`";
+        List<Order> orders = new ArrayList<>(5);
+        try (var conn = ConnPool.getConnection()) {
+            try (var prepStat = conn.prepareStatement(sql)) {
+                ResultSet resSet = prepStat.executeQuery();
+                while (resSet.next()) {
+                    orders.add(mapToModel(resSet));
                 }
             }
         } catch (SQLException e) {
@@ -72,15 +98,15 @@ public class OrderDaoImpl implements OrderDao {
     }
 
     @Override
-    public List<Order> findAllOrdersByUserId(User user) throws DBException {
-        String sql = "SELECT * FROM `order` WHERE user_id = ?";
-        List<Order> userOrders = new ArrayList<>(5);
-        try (var connection = HikariCP.getHikariConnection()) {
-            try (var preparedStatement = connection.prepareStatement(sql)) {
-                preparedStatement.setString(1, user.getId());
-                ResultSet resultSet = preparedStatement.executeQuery();
-                while (resultSet.next()) {
-                    userOrders.add(build(resultSet));
+    public List<Order> findUserOrders(User user) throws DBException {
+        String sql = "SELECT * FROM `orders` WHERE users_id = ?";
+        List<Order> orders = new ArrayList<>(5);
+        try (var conn = ConnPool.getConnection()) {
+            try (var prepStat = conn.prepareStatement(sql)) {
+                prepStat.setInt(1, user.getId());
+                ResultSet resSet = prepStat.executeQuery();
+                while (resSet.next()) {
+                    orders.add(mapToModel(resSet));
                 }
             }
         } catch (SQLException e) {
@@ -88,58 +114,16 @@ public class OrderDaoImpl implements OrderDao {
             throw new DBException("Failed to read all user orders from database!", e);
         }
         LOG.log(Level.INFO, "Successfully read all user orders from database!");
-        return userOrders;
-    }
-
-    @Override
-    public boolean isExist(int orderId) throws DBException {
-        String sql = "SELECT EXISTS(SELECT id FROM `order` WHERE id = ?)";
-        boolean isOrderExist = Boolean.FALSE;
-        try (var connection = HikariCP.getHikariConnection()) {
-            try (var preparedStatement = connection.prepareStatement(sql,
-                    ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE)) {
-                preparedStatement.setInt(1, orderId);
-                var resultSet = preparedStatement.executeQuery();
-                while (resultSet.next()) {
-                    isOrderExist = resultSet.getBoolean(1);
-                }
-            }
-        } catch (SQLException e) {
-            LOG.log(Level.ERROR, String.format("Failed to check order existence with orderId=%d", orderId), e);
-            throw new DBException(String.format("Failed to check order existence with orderId=%d", orderId), e);
-        }
-        LOG.log(Level.INFO, String.format("Successfully check order existence with orderId=%d", orderId));
-        return isOrderExist;
-    }
-
-    @Override
-    public boolean isExistOrderWithCargoId(int cargoId) throws DBException {
-        String sql = "SELECT EXISTS(SELECT id FROM `order` WHERE cargo_id = ?)";
-        boolean isExist = Boolean.FALSE;
-        try (var connection = HikariCP.getHikariConnection()) {
-            try (var preparedStatement = connection.prepareStatement(sql,
-                    ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE)) {
-                preparedStatement.setInt(1, cargoId);
-                var resultSet = preparedStatement.executeQuery();
-                while (resultSet.next()) {
-                    isExist = resultSet.getBoolean(1);
-                }
-            }
-        } catch (SQLException e) {
-            LOG.log(Level.ERROR, String.format("Failed to check order existence with cargoId=%d", cargoId), e);
-            throw new DBException(String.format("Failed to check order existence with cargoId=%d", cargoId), e);
-        }
-        LOG.log(Level.INFO, String.format("Successfully check order existence with cargoId=%d", cargoId));
-        return isExist;
+        return orders;
     }
 
     @Override
     public void deleteById(int orderId) throws DBException {
-        String sql = "DELETE FROM `order` WHERE id = ?;";
-        try (var connection = HikariCP.getHikariConnection()) {
-            try (var preparedStatement = connection.prepareStatement(sql)) {
-                preparedStatement.setInt(1, orderId);
-                preparedStatement.executeUpdate();
+        String sql = "DELETE FROM `orders` WHERE id = ?;";
+        try (var conn = ConnPool.getConnection()) {
+            try (var prepStat = conn.prepareStatement(sql)) {
+                prepStat.setInt(1, orderId);
+                prepStat.executeUpdate();
             }
         } catch (SQLException e) {
             LOG.log(Level.ERROR, String.format("Failed to delete order with orderId=%d", orderId), e);
@@ -149,34 +133,13 @@ public class OrderDaoImpl implements OrderDao {
     }
 
     @Override
-    public BigDecimal findOrderPrice(int id) throws DBException {
-        String sql = "SELECT price FROM `order` WHERE id = ?";
-        BigDecimal orderPrice = null;
-        try (var connection = HikariCP.getHikariConnection()) {
-            try (var preparedStatement = connection.prepareStatement(sql)) {
-                preparedStatement.setInt(1, id);
-                ResultSet resultSet = preparedStatement.executeQuery();
-                while (resultSet.next()) {
-                    orderPrice = resultSet.getBigDecimal("price");
-                }
-            }
-        } catch (SQLException e) {
-            LOG.log(Level.ERROR, "Failed to get order's price", e);
-            throw new DBException("Failed to get order's price", e);
-        }
-        LOG.log(Level.INFO, "Successfully get order's price");
-        return orderPrice;
-    }
-
-    @Override
-    public void updateOrderState(int orderId, OrderState orderState) throws DBException {
-        String sql = "UPDATE `order` SET state = ? WHERE id = ?;";
-        int i = 0;
-        try (var connection = HikariCP.getHikariConnection()) {
-            try (var preparedStatement = connection.prepareStatement(sql)) {
-                preparedStatement.setString(++i, orderState.toString());
-                preparedStatement.setInt(++i, orderId);
-                preparedStatement.executeUpdate();
+    public void update(Order order) throws DBException {
+        String sql = "UPDATE `orders` SET state = ? WHERE id = ?;";
+        try (var conn = ConnPool.getConnection()) {
+            try (var prepStat = conn.prepareStatement(sql)) {
+                prepStat.setString(1, order.getState().toString());
+                prepStat.setInt(2, order.getId());
+                prepStat.executeUpdate();
                 LOG.log(Level.INFO, "Successfully update order's state in database");
             }
         } catch (SQLException e) {
@@ -186,54 +149,35 @@ public class OrderDaoImpl implements OrderDao {
     }
 
     @Override
-    public List<Order> findOrders(int start, int numbOfRecords) throws DBException {
-        List<Order> orders = new ArrayList<>(numbOfRecords);
-        String sql = "SELECT * FROM `order` LIMIT ?, ?;";
-        try (var conn = HikariCP.getHikariConnection()) {
-            try (var prepStatement = conn.prepareStatement(sql)) {
-                prepStatement.setInt(1, start);
-                prepStatement.setInt(2, numbOfRecords);
-                ResultSet resSet = prepStatement.executeQuery();
-                while (resSet.next()) {
-                    orders.add(build(resSet));
-                }
-            }
-        } catch (SQLException e) {
-            LOG.error("Failed to obtain orders LIMIT", e);
-            throw new DBException("Failed to obtain orders LIMIT", e);
-        }
-        return orders;
+    public Order mapToModel(ResultSet resSet) throws SQLException {
+        return new Order(
+                resSet.getInt("id"),
+                resSet.getInt("users_id"),
+                resSet.getString("route"),
+                new Cargo(
+                        resSet.getDouble("length"),
+                        resSet.getDouble("width"),
+                        resSet.getDouble("height"),
+                        resSet.getDouble("weight")
+                ),
+                resSet.getDate("registration_date"),
+                resSet.getDate("delivery_date"),
+                OrderState.valueOf(resSet.getString("state")),
+                resSet.getBigDecimal("price")
+        );
     }
 
     @Override
-    public int getNumbOfRecords() throws DBException {
-        int numbOfRecords = 0;
-        String sql = "SELECT COUNT(id) AS 'id' FROM `order`;";
-        try (var conn = HikariCP.getHikariConnection()) {
-            try (var prepStatement = conn.prepareStatement(sql)) {
-                ResultSet resSet = prepStatement.executeQuery();
-                while (resSet.next()) {
-                    numbOfRecords = resSet.getInt("id");
-                }
-            }
-        } catch (SQLException e) {
-            LOG.error("Failed to receive number of records table [order]", e);
-            throw new DBException("Failed to receive number of records table [order]", e);
-        }
-        return numbOfRecords;
+    public void mapFromModel(PreparedStatement prepStat, Order order) throws SQLException {
+        prepStat.setInt(1, order.getUserId());
+        prepStat.setString(2, order.getRoute());
+        prepStat.setDate(3, new Date(order.getRegistrationDate().getTime()));
+        prepStat.setBigDecimal(4, order.getPrice());
+        prepStat.setString(5, order.getState().toString());
+        prepStat.setDouble(6, order.getCargo().getLength());
+        prepStat.setDouble(7, order.getCargo().getWidth());
+        prepStat.setDouble(8, order.getCargo().getHeight());
+        prepStat.setDouble(9, order.getCargo().getWeight());
     }
 
-    private Order build(ResultSet resultSet) throws SQLException {
-        return new Order(
-                resultSet.getInt("id"),
-                resultSet.getString("user_id"),
-                resultSet.getInt("cargo_id"),
-                resultSet.getBigDecimal("price"),
-                resultSet.getString("route_start"),
-                resultSet.getString("route_end"),
-                resultSet.getDate("date_departure"),
-                resultSet.getDate("date_arrival"),
-                OrderState.valueOf(resultSet.getString("state"))
-        );
-    }
 }
