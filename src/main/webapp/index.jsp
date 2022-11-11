@@ -1,7 +1,7 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
-<%@ page import="com.cargodelivery.dao.entity.UserRole" %>
+<%@ page import="com.cargodelivery.dao.entity.enums.UserRole" %>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -45,11 +45,11 @@
         <a href="#directions"><fmt:message key="index.directions"/></a>
         <a href="#contacts"><fmt:message key="index.contact.us"/></a>
         <c:choose>
-            <c:when test="${sessionScope.user.userRole eq UserRole.MANAGER}">
+            <c:when test="${sessionScope.user.role eq UserRole.MANAGER}">
                 <a href="profile_admin.jsp"><fmt:message key="index.profile"/></a>
             </c:when>
-            <c:when test="${sessionScope.user.userRole eq UserRole.USER}">
-                <a href="profileOrders"><fmt:message key="index.profile"/></a>
+            <c:when test="${sessionScope.user.role eq UserRole.USER}">
+                <a href="controller?command=USER_ORDERS"><fmt:message key="index.profile"/></a>
             </c:when>
             <c:otherwise>
                 <a href="login.jsp"><fmt:message key="index.profile"/></a>
@@ -69,16 +69,16 @@
         <div class="lang">
             <c:choose>
                 <c:when test="${sessionScope.locale eq null or sessionScope.locale == 'en'}">
-                    <a href="locale?p=index&locale=uk"><ion-icon name="globe-outline"></ion-icon></a>
+                    <a href="controller?command=LOCALE&locale=uk&page=index"><ion-icon name="globe-outline"></ion-icon></a>
                 </c:when>
                 <c:otherwise>
-                    <a href="locale?p=index&locale=en"><ion-icon name="globe-outline"></ion-icon></a>
+                    <a href="controller?command=LOCALE&locale=en&page=index"><ion-icon name="globe-outline"></ion-icon></a>
                 </c:otherwise>
             </c:choose>
         </div>
         <c:if test="${sessionScope.user != null}">
             <div class="logout">
-                <a href="login"><ion-icon name="exit-outline"></ion-icon></a>
+                <a href="controller?command=LOGOUT"><ion-icon name="exit-outline"></ion-icon></a>
             </div>
         </c:if>
     </div>
@@ -98,9 +98,9 @@
 </section>
 
 <!-- Cargo calculator section -->
-
+<%//TODO: REFACTOR CALC FORM + JS FORMULA%>
 <section class="calc" id="calc">
-    <form action="orderForm" method="post" id="form">
+    <form action="controller?command=CREATE_ORDER" method="post" id="form">
         <fieldset>
             <legend><fmt:message key="index.section.calc.legend"/></legend>
 
@@ -115,8 +115,14 @@
             </div>
 
             <div class="field">
-                <label for="deliveryDate"><fmt:message key="index.section.calc.label.delivery_date"/></label>
-                <input type="date" name="deliveryDate" id="deliveryDate" required/>
+                <label for="route"><fmt:message key="index.section.calc.label.route_end"/></label>
+                <select class="select" name="" id="route" required>
+                    <option selected disabled hidden>Choose route</option>
+                    <option value="1">Kyiv - Dnipro</option>
+                    <option value="2">Vinnytsia - Kyiv</option>
+                    <option value="3">Khmelnytskyi - Kharkiv</option>
+                    <option value="4">Lviv - Kyiv</option>
+                </select>
             </div>
 
             <div class="cargo_det">
@@ -127,7 +133,7 @@
                 </div>
                 <div class="field">
                     <label for="width"><fmt:message key="index.section.calc.label.width"/></label>
-                    <input type="number" min="1" name="width" id="width" required/>
+                    <input type="number" min="1" step=".01" name="width" id="width" required/>
                 </div>
                 <div class="field">
                     <label for="height"><fmt:message key="index.section.calc.label.height"/></label>
@@ -154,7 +160,7 @@
     <div class="content">
         <h1><fmt:message key="index.section.calc.h1.1"/> <span class="yellow"><fmt:message key="index.section.calc.h1.2"/></span></h1>
         <p><fmt:message key="index.section.content.p"/></p>
-        <span class="yellow order-msg">${requestScope.orderMessage}</span>
+        <span class="yellow order-msg">${sessionScope.orderMessage}</span>
     </div>
 </section>
 

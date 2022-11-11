@@ -1,6 +1,6 @@
-<%@ page import="com.cargodelivery.dao.entity.UserRole" %>
-<%@ page import="com.cargodelivery.dao.entity.AdminAction" %>
-<%@ page import="com.cargodelivery.dao.entity.OrderState" %>
+<%@ page import="com.cargodelivery.dao.entity.enums.UserRole" %>
+<%@ page import="com.cargodelivery.dao.entity.enums.AdminAction" %>
+<%@ page import="com.cargodelivery.dao.entity.enums.OrderState" %>
 <%@ page import="com.cargodelivery.dao.entity.User" %>
 <%@ page contentType="text/html;charset=UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
@@ -23,7 +23,7 @@
     response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
 
     if (session.getAttribute("user") == null ||
-            !((User) session.getAttribute("user")).getUserRole().equals(UserRole.MANAGER))
+            !((User) session.getAttribute("user")).getRole().equals(UserRole.MANAGER))
         response.sendRedirect("index.jsp");
 %>
 <!-- Preloader -->

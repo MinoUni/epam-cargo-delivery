@@ -194,7 +194,7 @@ th {
 
 th,
 td {
-    font-size: 0.8rem;
+    font-size: 1.2rem;
     font-weight: 300;
     transition: var(--transition);
     border-bottom: 2px solid var(--logo-transition);
@@ -240,8 +240,9 @@ td {
 
 .info_action,
 .del_action,
-.pay_action {
-    font-size: 0.8rem;
+.pay_action,
+.bill_action {
+    font-size: 1.2rem;
     font-weight: 500;
     text-decoration: none;
     outline: none;
@@ -252,13 +253,15 @@ td {
     border-bottom: 2px solid transparent;
 }
 
-.info_action {
+.info_action,
+.bill_action {
     color: #dea32e;
 }
 
 .info_action:hover,
 .del_action:hover,
-.pay_action:hover {
+.pay_action:hover,
+.bill_action:hover {
     border-color: var(--transition-color);
 }
 

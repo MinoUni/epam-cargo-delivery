@@ -239,6 +239,11 @@ section {
     color: var(--text-color);
 }
 
+.field #route {
+    padding: 8px 12px;
+    cursor: pointer;
+}
+
 .field input {
     outline: none;
     font-size: 1.5rem;

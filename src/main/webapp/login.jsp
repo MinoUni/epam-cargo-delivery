@@ -19,7 +19,7 @@
 <section class="container">
     <div class="login">
         <header><fmt:message key="login.header"/></header>
-        <form method="post" action="login">
+        <form method="post" action="controller?command=LOGIN">
             <div class="field login-field">
                 <div class="input-field">
                     <input type="text" name="login" id="login"

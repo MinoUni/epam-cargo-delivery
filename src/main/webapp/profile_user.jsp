@@ -2,8 +2,8 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt" %>
 <%@ page import="com.cargodelivery.dao.entity.User" %>
-<%@ page import="com.cargodelivery.dao.entity.UserRole" %>
-<%@ page import="com.cargodelivery.dao.entity.OrderState" %>
+<%@ page import="com.cargodelivery.dao.entity.enums.UserRole" %>
+<%@ page import="com.cargodelivery.dao.entity.enums.OrderState" %>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -16,7 +16,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css" rel="stylesheet"/>
     <link href="https://unpkg.com/boxicons@2.1.2/css/boxicons.min.css" rel="stylesheet"/>
 
-    <title>Cargo-Delivery | U-Profile ${sessionScope.user.id}</title>
+    <title>Cargo-Delivery | U-Profile ${sessionScope.user.login}</title>
     <fmt:setLocale value="${sessionScope.locale}" scope="session" />
     <fmt:setBundle basename="local" />
 </head>
@@ -25,7 +25,7 @@
     response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
 
     if (session.getAttribute("user") == null ||
-            !((User) session.getAttribute("user")).getUserRole().equals(UserRole.USER))
+            !((User) session.getAttribute("user")).getRole().equals(UserRole.USER))
         response.sendRedirect("index.jsp");
 %>
 <!-- Preloader -->
@@ -40,7 +40,7 @@
     <!-- Navbar panel -->
     <nav class="navbar">
         <a href="profile_user.jsp"><fmt:message key="profile.user.navbar.profile"/></a>
-        <a href="profileOrders"><fmt:message key="profile.user.navbar.orders"/></a>
+        <a href="controller?command=USER_ORDERS"><fmt:message key="profile.user.navbar.orders"/></a>
         <a href=""><fmt:message key="profile.user.navbar.download.orders"/></a>
         <a href=""><fmt:message key="profile.user.navbar.balance"/></a>
     </nav>
@@ -54,15 +54,15 @@
         <div class="lang">
             <c:choose>
                 <c:when test="${sessionScope.locale eq null or sessionScope.locale == 'en'}">
-                    <a href="locale?p=uprofile&locale=uk"><ion-icon name="globe-outline"></ion-icon></a>
+                    <a href="controller?command=LOCALE&locale=uk&page=userProfile"><ion-icon name="globe-outline"></ion-icon></a>
                 </c:when>
                 <c:otherwise>
-                    <a href="locale?p=uprofile&locale=en"><ion-icon name="globe-outline"></ion-icon></a>
+                    <a href="controller?command=LOCALE&locale=en&page=userProfile"><ion-icon name="globe-outline"></ion-icon></a>
                 </c:otherwise>
             </c:choose>
         </div>
         <div class="logout">
-            <a href="login"><ion-icon name="exit-outline"></ion-icon></a>
+            <a href="controller?command=LOGOUT"><ion-icon name="exit-outline"></ion-icon></a>
         </div>
     </div>
 </header>
@@ -119,18 +119,6 @@
                                                placeholder="<fmt:message key="profile.user.table.thead.th.input.6"/>"
                                         >
                                     </th>
-                                    <th>
-                                        <input type="text"
-                                               class="search-input"
-                                               placeholder="<fmt:message key="profile.user.table.thead.th.input.7"/>"
-                                        >
-                                    </th>
-                                    <th>
-                                        <input type="text"
-                                               class="search-input"
-                                               placeholder="<fmt:message key="profile.user.table.thead.th.input.8"/>"
-                                        >
-                                    </th>
                                     <th><fmt:message key="profile.user.table.thead.th.input.9"/></th>
                                 </tr>
                             </thead>
@@ -138,24 +126,26 @@
                                 <c:forEach var="order" items="${sessionScope.userOrders}">
                                     <tr>
                                         <td>${order.id}</td>
-                                        <td>${order.cargoId}</td>
-                                        <td>${order.price}</td>
-                                        <td>${order.routeStart}</td>
-                                        <td>${order.routeEnd}</td>
+                                        <td>${order.userId}</td>
+                                        <td>${order.route}</td>
                                         <td>${order.registrationDate}</td>
                                         <td>${order.deliveryDate}</td>
-                                        <td>${order.state}</td>
+                                        <td>${order.price}</td>
                                         <td>
                                             <div class="actions">
-                                                <a href="order?action=info&cargoId=${order.cargoId}"
+                                                <a href="controller?command=ORDER_INFO&orderId=${order.id}"
                                                    class="info_action"><fmt:message key="profile.user.table.tbody.action.info"/></a>
                                                 <c:if test="${order.state != OrderState.PAID}">
-                                                    <a href="order?action=delete&orderId=${order.id}&cargoId=${order.cargoId}"
+                                                    <a href="controller?command=ORDER_DELETE&orderId=${order.id}"
                                                        class="del_action"><fmt:message key="profile.user.table.tbody.action.delete"/></a>
                                                 </c:if>
                                                 <c:if test="${order.state == OrderState.WAITING_FOR_PAYMENT}">
-                                                    <a href="order?action=pay&orderId=${order.id}"
+                                                    <a href="controller?command=ORDER_PAY&orderId=${order.id}"
                                                        class="pay_action"><fmt:message key="profile.user.table.tbody.action.pay"/></a>
+                                                </c:if>
+                                                <c:if test="${order.state eq OrderState.PAID}">
+                                                    <a href="controller?command=ORDER_BILL&orderId=${order.id}"
+                                                        class="bill_action">bill</a>
                                                 </c:if>
                                             </div>
                                         </td>
@@ -175,7 +165,7 @@
             <p><fmt:message key="profile.user.table.cargo.header.1"/><span class="yellow"><fmt:message key="profile.user.table.cargo.header.2"/></span></p>
         </div>
         <c:choose>
-            <c:when test="${sessionScope.cargo == null}">
+            <c:when test="${sessionScope.orderInfo == null}">
                 <p class="empty"><fmt:message key="profile.user.table.cargo.empty"/></p>
             </c:when>
             <c:otherwise>
@@ -192,11 +182,11 @@
                         </thead>
                         <tbody>
                         <tr>
-                            <td>${sessionScope.cargo.id}</td>
-                            <td>${sessionScope.cargo.length}</td>
-                            <td>${sessionScope.cargo.width}</td>
-                            <td>${sessionScope.cargo.height}</td>
-                            <td>${sessionScope.cargo.weight}</td>
+                            <td>${sessionScope.orderInfo.cargo.length}</td>
+                            <td>${sessionScope.orderInfo.cargo.width}</td>
+                            <td>${sessionScope.orderInfo.cargo.height}</td>
+                            <td>${sessionScope.orderInfo.cargo.weight}</td>
+                            <td>${sessionScope.orderInfo.state}</td>
                         </tr>
                         </tbody>
                     </table>

@@ -21,7 +21,7 @@
 <section class="container">
     <div class="signup">
         <header><fmt:message key="signup.header"/></header>
-        <form method="post" action="signup">
+        <form method="post" action="controller?command=SIGNUP">
             <div class="field login-field">
                 <div class="input-field">
                     <input type="text" name="login" id="login"
