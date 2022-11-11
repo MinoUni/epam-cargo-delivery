@@ -20,7 +20,7 @@ public class AppUtils {
      * @return parameter value
      * @throws IllegalArgumentException when parameter is null or blank
      */
-    public static String checkRequestParam(HttpServletRequest request, String param) throws IllegalArgumentException {
+    public static String checkReqParam(HttpServletRequest request, String param) throws IllegalArgumentException {
         String result = request.getParameter(param);
         if (result == null || result.isBlank()) {
             LOG.error("Param from request was Blank or NULL, paramName={} paramValue={}", param, result);
