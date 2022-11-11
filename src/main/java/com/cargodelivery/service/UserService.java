@@ -38,4 +38,6 @@ public interface UserService {
      *                              SQL problem
      */
     List<User> findAllUsers() throws UserServiceException;
+
+    User findUser(User user) throws UserServiceException;
 }

@@ -1,46 +1,37 @@
 package com.cargodelivery.service.impl;
 
-import com.cargodelivery.dao.CargoDao;
 import com.cargodelivery.dao.OrderDao;
-import com.cargodelivery.dao.UserDao;
-import com.cargodelivery.dao.entity.Cargo;
+import com.cargodelivery.dao.UserRepository;
 import com.cargodelivery.dao.entity.Order;
-import com.cargodelivery.dao.entity.OrderState;
 import com.cargodelivery.dao.entity.User;
+import com.cargodelivery.dao.entity.enums.OrderState;
 import com.cargodelivery.exception.DBException;
 import com.cargodelivery.exception.OrderServiceException;
 import com.cargodelivery.service.OrderService;
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Optional;
 
 public class OrderServiceImpl implements OrderService {
 
-    private static final Logger logger = LogManager.getLogger(OrderServiceImpl.class);
-
+    private static final Logger LOG = LoggerFactory.getLogger(OrderServiceImpl.class);
     private final OrderDao orderRepository;
-
-    private final CargoDao cargoRepository;
-
-    private final UserDao userRepository;
-
+    private final UserRepository userRepository;
     private final int recordsPerPage = 5;
 
-    public OrderServiceImpl(CargoDao cargoRepository, OrderDao orderRepository, UserDao userRepository) {
-        this.cargoRepository = cargoRepository;
+    public OrderServiceImpl(OrderDao orderRepository, UserRepository userRepository) {
         this.orderRepository = orderRepository;
         this.userRepository = userRepository;
     }
-
 
     @Override
     public List<Order> findAllOrders() throws OrderServiceException {
         try {
             return orderRepository.findAllOrders();
         } catch (DBException e) {
-            logger.log(Level.ERROR, e.getMessage(), e);
+            LOG.error(e.getMessage(), e);
             throw new OrderServiceException(e);
         }
     }
@@ -50,7 +41,7 @@ public class OrderServiceImpl implements OrderService {
         try {
             orderRepository.save(order);
         } catch (DBException e) {
-            logger.log(Level.ERROR, e.getMessage(), e);
+            LOG.error(e.getMessage(), e);
             throw new OrderServiceException(e);
         }
     }
@@ -59,135 +50,141 @@ public class OrderServiceImpl implements OrderService {
     public List<Order> findAllUserOrders(User user) throws OrderServiceException {
         try {
             if (!userRepository.isExist(user)) {
-                logger.log(Level.ERROR, "User not exist");
+                LOG.warn("Failed to find user={}", user.getLogin());
                 throw new OrderServiceException("User not exist");
             }
-            return orderRepository.findAllOrdersByUserId(user);
+            return orderRepository.findUserOrders(user);
         } catch (DBException e) {
-            logger.log(Level.ERROR, e.getMessage(), e);
+            LOG.error(e.getMessage(), e);
             throw new OrderServiceException(e);
         }
     }
 
     @Override
-    public Cargo findCargo(String cargoId) throws OrderServiceException {
-        int parsedCargoId = parseString(cargoId);
+    public void deleteOrder(int orderId) throws OrderServiceException {
         try {
-            if (!cargoRepository.isExist(parsedCargoId)) {
-                logger.log(Level.ERROR, String.format("Cargo with cargoId=[%s] not exist", cargoId));
-                throw new OrderServiceException(String.format("Cargo with cargoId=[%s] not exist", cargoId));
-            }
-            return cargoRepository.findById(parsedCargoId).get();
-        } catch (DBException e) {
-            logger.log(Level.ERROR, e.getMessage(), e);
-            throw new OrderServiceException(e);
-        }
-
-    }
-
-    @Override
-    public void deleteOrder(String orderId, String cargoId) throws OrderServiceException {
-        var parsedOrderId = parseString(orderId);
-        var parsedCargoId = parseString(cargoId);
-        try {
-            if (!orderRepository.isExist(parsedOrderId)) {
+            if (orderRepository.findByField(orderId).isEmpty()) {
+                LOG.warn("Failed to find order={}", orderId);
                 throw new OrderServiceException(String.format("Order with orderId=[%s] not exist", orderId));
             }
-            orderRepository.deleteById(parsedOrderId);
-            if (orderRepository.isExistOrderWithCargoId(parsedCargoId)) {
-                throw new OrderServiceException("There are another order with that cargo=" + cargoId);
-            }
-            cargoRepository.deleteById(parsedCargoId);
-            logger.log(Level.INFO, "Order delete successfully");
+            orderRepository.deleteById(orderId);
+            LOG.info("Successfully deleted order with id={}", orderId);
         } catch (DBException e) {
-            logger.log(Level.ERROR, e.getMessage(), e);
+            LOG.error(e.getMessage(), e);
             throw new OrderServiceException(e);
         }
     }
 
     @Override
-    public User payForOrder(String orderId, User user) throws OrderServiceException {
-        int id = parseString(orderId);
+    public User payForOrder(int orderId, User user) throws OrderServiceException {
         try {
-            if (!userRepository.isExist(user)) {
-                throw new OrderServiceException(String.format("User with login=[%s] not exists", user.getId()));
+            Optional<User> userDetails = getUserAfterPayment(orderId, user);
+            if (userDetails.isEmpty()) {
+                LOG.warn("Failed to find user={}", user.getLogin());
+                throw new OrderServiceException(String.format("User=%s not exists", user.getLogin()));
             }
-            if (!orderRepository.isExist(id)) {
-                throw new OrderServiceException(String.format("Order with orderId=[%s] not exist", orderId));
-            }
-            payment(id, user);
-            return userRepository.findById(user).get();
+            return userDetails.get();
         } catch (DBException e) {
-            logger.log(Level.ERROR, e.getMessage(), e);
+            LOG.error(e.getMessage(), e);
             throw new OrderServiceException(e);
         }
+    }
+
+    private Optional<User> getUserAfterPayment(int orderId, User user) throws DBException, OrderServiceException {
+        Optional<User> userDetails = userRepository.findByField(user.getLogin());
+        Optional<Order> orderDetails = orderRepository.findByField(orderId);
+
+        if (userDetails.isEmpty()) {
+            LOG.warn("Failed to find user={}", user.getLogin());
+            throw new OrderServiceException(String.format("User=%s not exists", user.getLogin()));
+        }
+        if (orderDetails.isEmpty()) {
+            LOG.warn("Failed to find order={}", orderId);
+            throw new OrderServiceException(String.format("Order=%d not exist", orderId));
+        }
+        if (!orderDetails.get().getState().equals(OrderState.WAITING_FOR_PAYMENT)) {
+            LOG.error("Invalid state={} for order={}", orderDetails.get().getState().toString(), orderId);
+            throw new OrderServiceException(String.format("Invalid state=%s for order=%d", orderDetails.get().getState().toString(), orderId));
+        }
+        var balance = userDetails.get().getBalance();
+        var price = orderDetails.get().getPrice();
+
+        var balanceAfterPayment = balance.subtract(price);
+
+        if (balanceAfterPayment.doubleValue() < 0) {
+            LOG.warn("User={} balance too low to make a purchase", user.getLogin());
+            throw new OrderServiceException(String.format("User=%s balance too low to make a purchase", user.getLogin()));
+        }
+        userDetails.get().setBalance(balanceAfterPayment);
+        orderDetails.get().setState(OrderState.PAID);
+
+        userRepository.update(userDetails.get());
+        orderRepository.update(orderDetails.get());
+
+        return userRepository.findByField(userDetails.get().getLogin());
     }
 
     @Override
     public void updateOrderState(String orderId, OrderState orderState) throws OrderServiceException {
-        int id = parseString(orderId);
-        try {
-            if (!orderRepository.isExist(id)) {
-                throw new OrderServiceException(String.format("Order with orderId=%s not exist", orderId));
-            }
-            orderRepository.updateOrderState(id, orderState);
-        } catch (DBException e) {
-            logger.log(Level.ERROR, e.getMessage(), e);
-            throw new OrderServiceException(e);
-        }
+//        int id = parseString(orderId);
+//        try {
+//            if (!orderRepository.isExist(id)) {
+//                throw new OrderServiceException(String.format("Order with orderId=%s not exist", orderId));
+//            }
+//            orderRepository.updateOrderState(id, orderState);
+//        } catch (DBException e) {
+//            logger.log(Level.ERROR, e.getMessage(), e);
+//            throw new OrderServiceException(e);
+//        }
     }
 
     @Override
     public List<Order> getOrdersLimit(String page) throws OrderServiceException {
         List<Order> orders;
         int curPage = 1;
-        if (parseString(page) != 1) {
-            curPage = parseString(page);
-        }
-        try {
-             orders = orderRepository.findOrders(((curPage - 1) * recordsPerPage), recordsPerPage);
-        } catch (DBException e) {
-            throw new OrderServiceException(e);
-        }
-        return orders;
+//        if (parseString(page) != 1) {
+//            curPage = parseString(page);
+//        }
+//        try {
+//             orders = orderRepository.findOrders(((curPage - 1) * recordsPerPage), recordsPerPage);
+//        } catch (DBException e) {
+//            throw new OrderServiceException(e);
+//        }
+        return null;
     }
 
     @Override
     public int getNumbOfPages() throws OrderServiceException{
         try {
-            int numbOfRecords = orderRepository.getNumbOfRecords();
+            int numbOfRecords = orderRepository.countNumbOfRecords("orders");
             return (int) Math.ceil(numbOfRecords * 1.0 / recordsPerPage);
         } catch (DBException e) {
             throw new OrderServiceException(e);
         }
     }
 
-    private void payment(int orderId, User user) throws OrderServiceException, DBException {
-        var userBalance = userRepository.getUserBalance(user);
-        var orderPrice = orderRepository.findOrderPrice(orderId);
-        if (userBalance.subtract(orderPrice).doubleValue() < 0) {
-            throw new OrderServiceException("Low balance");
-        }
-        userRepository.updateUserBalance(user, userBalance.subtract(orderPrice));
-        orderRepository.updateOrderState(orderId, OrderState.PAID);
-    }
-
     @Override
-    public Cargo saveCargo(Cargo cargo) throws OrderServiceException {
+    public Order findOrder(int orderId) throws OrderServiceException {
         try {
-            return cargoRepository.save(cargo);
+            Optional<Order> order = orderRepository.findByField(orderId);
+            if (order.isEmpty()) {
+                throw new OrderServiceException("");
+            }
+            return order.get();
         } catch (DBException e) {
-            logger.log(Level.ERROR, e.getMessage(), e);
-            throw new OrderServiceException(e.getMessage());
+            LOG.error(e.getMessage(), e);
+            throw new OrderServiceException(e);
         }
     }
 
-    private int parseString(String param) throws OrderServiceException {
-        try {
-            return Integer.parseInt(param);
-        }  catch (NumberFormatException e) {
-            logger.log(Level.ERROR, String.format("Invalid to parse param=%s", param));
-            throw new OrderServiceException(String.format("Invalid to parse param=%s", param));
-        }
+    private void payment(int orderId, User user) throws OrderServiceException, DBException {
+//        var userBalance = userRepository.getUserBalance(user);
+//        var orderPrice = orderRepository.findOrderPrice(orderId);
+//        if (userBalance.subtract(orderPrice).doubleValue() < 0) {
+//            throw new OrderServiceException("Low balance");
+//        }
+//        userRepository.updateUserBalance(user, userBalance.subtract(orderPrice));
+//        orderRepository.updateOrderState(orderId, OrderState.PAID);
     }
+    
 }
