@@ -17,8 +17,10 @@ import java.util.Optional;
 public class UserServiceImpl implements UserService {
 
     private static final Logger LOG = LoggerFactory.getLogger(UserServiceImpl.class);
+    private static final String TABLE_NAME = "users";
 
     private final UserRepository userRepository;
+    private final int recordsPerPage = 5;
 
     public UserServiceImpl(UserRepository userRepository) {
         this.userRepository = userRepository;
@@ -60,9 +62,19 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public List<User> findAllUsers() throws UserServiceException {
+    public List<User> findAllUsers(int page) throws UserServiceException {
         try {
-            return userRepository.findAllBetween(1,1);
+            return userRepository.findAllBetween(((page - 1) * recordsPerPage), recordsPerPage);
+        } catch (DBException e) {
+            throw new UserServiceException(e.getMessage());
+        }
+    }
+
+    @Override
+    public int getNumbOfPages() throws UserServiceException {
+        try {
+            int numbOfRecords = userRepository.countNumbOfRecords(TABLE_NAME);
+            return (int) Math.ceil(numbOfRecords * 1.0 / recordsPerPage);
         } catch (DBException e) {
             throw new UserServiceException(e.getMessage());
         }

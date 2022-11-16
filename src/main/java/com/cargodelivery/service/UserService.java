@@ -37,7 +37,9 @@ public interface UserService {
      * @throws UserServiceException when error occur in database or
      *                              SQL problem
      */
-    List<User> findAllUsers() throws UserServiceException;
+    List<User> findAllUsers(int page) throws UserServiceException;
+
+    int getNumbOfPages() throws UserServiceException;
 
     User findUser(User user) throws UserServiceException;
 }
