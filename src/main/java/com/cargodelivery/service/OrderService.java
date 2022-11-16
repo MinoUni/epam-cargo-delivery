@@ -66,9 +66,9 @@ public interface OrderService {
      * @throws OrderServiceException when order not exists in database
      *                               or SQL problem
      */
-    void updateOrderState(String orderId, OrderState orderState) throws OrderServiceException;
+    void updateState(int orderId, OrderState orderState) throws OrderServiceException;
 
-    List<Order> getOrdersLimit(String page) throws OrderServiceException;
+    List<Order> getOrdersLimit(int page) throws OrderServiceException;
 
     int getNumbOfPages() throws OrderServiceException;
 

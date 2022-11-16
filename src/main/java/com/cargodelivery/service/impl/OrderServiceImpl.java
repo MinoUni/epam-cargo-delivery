@@ -17,6 +17,7 @@ import java.util.Optional;
 public class OrderServiceImpl implements OrderService {
 
     private static final Logger LOG = LoggerFactory.getLogger(OrderServiceImpl.class);
+    private static final String TABLE_NAME = "orders";
     private final OrderDao orderRepository;
     private final UserRepository userRepository;
     private final int recordsPerPage = 5;
@@ -32,7 +33,7 @@ public class OrderServiceImpl implements OrderService {
             return orderRepository.findAllOrders();
         } catch (DBException e) {
             LOG.error(e.getMessage(), e);
-            throw new OrderServiceException(e);
+            throw new OrderServiceException(e.getMessage());
         }
     }
 
@@ -42,7 +43,7 @@ public class OrderServiceImpl implements OrderService {
             orderRepository.save(order);
         } catch (DBException e) {
             LOG.error(e.getMessage(), e);
-            throw new OrderServiceException(e);
+            throw new OrderServiceException(e.getMessage());
         }
     }
 
@@ -56,7 +57,7 @@ public class OrderServiceImpl implements OrderService {
             return orderRepository.findUserOrders(user);
         } catch (DBException e) {
             LOG.error(e.getMessage(), e);
-            throw new OrderServiceException(e);
+            throw new OrderServiceException(e.getMessage());
         }
     }
 
@@ -71,7 +72,7 @@ public class OrderServiceImpl implements OrderService {
             LOG.info("Successfully deleted order with id={}", orderId);
         } catch (DBException e) {
             LOG.error(e.getMessage(), e);
-            throw new OrderServiceException(e);
+            throw new OrderServiceException(e.getMessage());
         }
     }
 
@@ -86,7 +87,7 @@ public class OrderServiceImpl implements OrderService {
             return userDetails.get();
         } catch (DBException e) {
             LOG.error(e.getMessage(), e);
-            throw new OrderServiceException(e);
+            throw new OrderServiceException(e.getMessage());
         }
     }
 
@@ -125,38 +126,31 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public void updateOrderState(String orderId, OrderState orderState) throws OrderServiceException {
-//        int id = parseString(orderId);
-//        try {
-//            if (!orderRepository.isExist(id)) {
-//                throw new OrderServiceException(String.format("Order with orderId=%s not exist", orderId));
-//            }
-//            orderRepository.updateOrderState(id, orderState);
-//        } catch (DBException e) {
-//            logger.log(Level.ERROR, e.getMessage(), e);
-//            throw new OrderServiceException(e);
-//        }
+    public void updateState(int orderId, OrderState orderState) throws OrderServiceException {
+        try {
+            var order = findOrder(orderId);
+            order.setState(orderState);
+            orderRepository.update(order);
+        } catch (DBException e) {
+            LOG.error(e.getMessage(), e);
+            throw new OrderServiceException(e.getMessage());
+        }
     }
 
     @Override
-    public List<Order> getOrdersLimit(String page) throws OrderServiceException {
-        List<Order> orders;
-        int curPage = 1;
-//        if (parseString(page) != 1) {
-//            curPage = parseString(page);
-//        }
-//        try {
-//             orders = orderRepository.findOrders(((curPage - 1) * recordsPerPage), recordsPerPage);
-//        } catch (DBException e) {
-//            throw new OrderServiceException(e);
-//        }
-        return null;
+    public List<Order> getOrdersLimit(int page) throws OrderServiceException {
+        try {
+             return orderRepository.findAllBetween(((page - 1) * recordsPerPage), recordsPerPage);
+        } catch (DBException e) {
+            LOG.error(e.getMessage(), e);
+            throw new OrderServiceException(e.getMessage());
+        }
     }
 
     @Override
     public int getNumbOfPages() throws OrderServiceException{
         try {
-            int numbOfRecords = orderRepository.countNumbOfRecords("orders");
+            int numbOfRecords = orderRepository.countNumbOfRecords(TABLE_NAME);
             return (int) Math.ceil(numbOfRecords * 1.0 / recordsPerPage);
         } catch (DBException e) {
             throw new OrderServiceException(e);
@@ -168,7 +162,7 @@ public class OrderServiceImpl implements OrderService {
         try {
             Optional<Order> order = orderRepository.findByField(orderId);
             if (order.isEmpty()) {
-                throw new OrderServiceException("");
+                throw new OrderServiceException("No order was found in db");
             }
             return order.get();
         } catch (DBException e) {
@@ -177,14 +171,4 @@ public class OrderServiceImpl implements OrderService {
         }
     }
 
-    private void payment(int orderId, User user) throws OrderServiceException, DBException {
-//        var userBalance = userRepository.getUserBalance(user);
-//        var orderPrice = orderRepository.findOrderPrice(orderId);
-//        if (userBalance.subtract(orderPrice).doubleValue() < 0) {
-//            throw new OrderServiceException("Low balance");
-//        }
-//        userRepository.updateUserBalance(user, userBalance.subtract(orderPrice));
-//        orderRepository.updateOrderState(orderId, OrderState.PAID);
-    }
-    
 }
