@@ -35,14 +35,14 @@ public class OrderPay implements Command {
     public String execute(HttpServletRequest req, HttpServletResponse resp) {
         HttpSession session = req.getSession();
         User user = (User) session.getAttribute("user");
-        int orderId = Integer.parseInt(AppUtils.checkReqParam(req, "orderId"));
         try {
+            int orderId = AppUtils.parseReqParam(req, "orderId");
             User updatedUser = orderService.payForOrder(orderId, user);
             LOG.info("User={} pay for order={} successfully", user.getLogin(), orderId);
             session.setAttribute("user", updatedUser);
             return CommandList.USER_ORDERS.getCommand().execute(req, resp);
-        } catch (OrderServiceException e) {
-            LOG.error("User={} pay for order={} successfully", user.getLogin(), orderId, e);
+        } catch (OrderServiceException | IllegalArgumentException e) {
+            LOG.error("User={} pay for order failed", user.getLogin(), e);
             session.setAttribute("errorMessage", e.getMessage());
             return CommandList.ERROR_PAGE.getCommand().execute(req, resp);
         }

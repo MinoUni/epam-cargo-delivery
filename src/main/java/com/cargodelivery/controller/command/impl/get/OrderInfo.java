@@ -33,7 +33,8 @@ public class OrderInfo implements Command {
     public String execute(HttpServletRequest req, HttpServletResponse resp) {
         HttpSession session = req.getSession();
         try {
-            Order order = orderService.findOrder(Integer.parseInt(AppUtils.checkReqParam(req, "orderId")));
+            int orderId = AppUtils.parseReqParam(req, "orderId");
+            Order order = orderService.findOrder(orderId);
             LOG.info("Successfully find info about order{}", order);
             session.setAttribute("orderInfo", order);
             return CommandList.USER_ORDERS.getCommand().execute(req, resp);

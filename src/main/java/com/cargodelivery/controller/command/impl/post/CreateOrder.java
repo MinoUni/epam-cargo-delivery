@@ -1,6 +1,7 @@
 package com.cargodelivery.controller.command.impl.post;
 
 import com.cargodelivery.controller.command.Command;
+import com.cargodelivery.controller.command.CommandList;
 import com.cargodelivery.dao.entity.Cargo;
 import com.cargodelivery.dao.entity.Order;
 import com.cargodelivery.dao.entity.User;
@@ -28,7 +29,6 @@ public class CreateOrder implements Command {
 
     private static final Logger LOG = LoggerFactory.getLogger(CreateOrder.class);
     private static final String INDEX_PAGE = "index.jsp";
-    private static final String ERROR_PAGE = "error.jsp";
     private final OrderService orderService;
 
     public CreateOrder() {
@@ -62,7 +62,7 @@ public class CreateOrder implements Command {
             return INDEX_PAGE;
         } catch (OrderServiceException | IllegalArgumentException | ParseException e) {
             req.getSession().setAttribute("errorMessage", e.getMessage());
-            return ERROR_PAGE;
+            return CommandList.ERROR_PAGE.getCommand().execute(req, resp);
         }
     }
 

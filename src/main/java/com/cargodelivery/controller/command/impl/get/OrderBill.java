@@ -47,8 +47,8 @@ public class OrderBill implements Command {
     @Override
     public String execute(HttpServletRequest req, HttpServletResponse resp) {
         HttpSession session = req.getSession();
-        int orderId = Integer.parseInt(AppUtils.checkReqParam(req, "orderId"));
         try {
+            int orderId = AppUtils.parseReqParam(req, "orderId");
             User user = userService.findUser((User) session.getAttribute("user"));
             Order order = orderService.findOrder(orderId);
 
@@ -143,7 +143,7 @@ public class OrderBill implements Command {
             document.close();
 
             return "profile_user.jsp";
-        } catch (OrderServiceException | UserServiceException | IOException | DocumentException e) {
+        } catch (OrderServiceException | UserServiceException | IllegalArgumentException | IOException | DocumentException e) {
             LOG.error(e.getMessage(), e);
             session.setAttribute("errorMessage", e.getMessage());
             return CommandList.ERROR_PAGE.getCommand().execute(req, resp);
