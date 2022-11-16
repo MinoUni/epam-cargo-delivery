@@ -114,16 +114,16 @@
                 <input type="text" name="routeEnd" id="routeEnd" required/>
             </div>
 
-            <div class="field">
-                <label for="route"><fmt:message key="index.section.calc.label.route_end"/></label>
-                <select class="select" name="" id="route" required>
-                    <option selected disabled hidden>Choose route</option>
-                    <option value="1">Kyiv - Dnipro</option>
-                    <option value="2">Vinnytsia - Kyiv</option>
-                    <option value="3">Khmelnytskyi - Kharkiv</option>
-                    <option value="4">Lviv - Kyiv</option>
-                </select>
-            </div>
+<%--            <div class="field">--%>
+<%--                <label for="route"><fmt:message key="index.section.calc.label.route_end"/></label>--%>
+<%--                <select class="select" name="" id="route" required>--%>
+<%--                    <option selected disabled hidden>Choose route</option>--%>
+<%--                    <option value="1">Kyiv - Dnipro</option>--%>
+<%--                    <option value="2">Vinnytsia - Kyiv</option>--%>
+<%--                    <option value="3">Khmelnytskyi - Kharkiv</option>--%>
+<%--                    <option value="4">Lviv - Kyiv</option>--%>
+<%--                </select>--%>
+<%--            </div>--%>
 
             <div class="cargo_det">
                 <p><fmt:message key="index.section.calc.p.cargo_details"/></p>
