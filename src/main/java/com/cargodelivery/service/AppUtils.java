@@ -1,12 +1,8 @@
 package com.cargodelivery.service;
 
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
 
 public class AppUtils {
 
@@ -15,34 +11,38 @@ public class AppUtils {
     /**
      * Checks parameter for null & blank value by parameter name
      *
-     * @param param   parameter name of request
+     * @param paramName   parameter name of request
      * @param request Http request from page
      * @return parameter value
      * @throws IllegalArgumentException when parameter is null or blank
      */
-    public static String checkReqParam(HttpServletRequest request, String param) throws IllegalArgumentException {
-        String result = request.getParameter(param);
-        if (result == null || result.isBlank()) {
-            LOG.error("Param from request was Blank or NULL, paramName={} paramValue={}", param, result);
-            throw new IllegalArgumentException(String.format("Param from request was Blank or NULL, paramName=%s paramValue=%s", param, result));
+    public static String checkReqParam(HttpServletRequest request, String paramName) throws IllegalArgumentException {
+        String param = request.getParameter(paramName);
+        if (param == null || param.isBlank()) {
+            LOG.error("Param from request was Blank or NULL, paramName={} paramValue={}", paramName, param);
+            throw new IllegalArgumentException(String.format("Param from request was Blank or NULL, paramName=%s paramValue=%s", paramName, param));
         }
-        return result;
+        return param;
     }
 
     /**
-     * Redirect to provided jsp and set attribute
-     * in session
+     * Parse int-type parameters from http requests
      *
-     * @param pageUrl JSP page name as string
-     * @param session Http session
-     * @param attributeName name of attribute that set in session
-     * @param attributeValue value of attribute to set in session
-     * @param resp Http response from jsp
-     * @throws IOException when parameter is null or blank
+     * @param paramName parameter name of request
+     * @param req Http request from page
+     * @return parameter value
+     * @throws IllegalArgumentException when parameter is null or blank
      */
-    public static void redirectToPage(String pageUrl, HttpSession session, String attributeName,
-                                Object attributeValue, HttpServletResponse resp) throws IOException {
-        session.setAttribute(attributeName, attributeValue);
-        resp.sendRedirect(pageUrl);
+    public static int parseReqParam(HttpServletRequest req, String paramName) throws IllegalArgumentException {
+        try {
+            return Integer.parseInt(checkReqParam(req, paramName));
+        } catch (NumberFormatException e) {
+            LOG.error("Invalid param={} was provided", paramName, e);
+            throw new IllegalArgumentException(String.format("Invalid param=%s was provided", paramName));
+        } catch (IllegalArgumentException e) {
+            LOG.error(e.getMessage(), e);
+            throw e;
+        }
     }
+
 }
