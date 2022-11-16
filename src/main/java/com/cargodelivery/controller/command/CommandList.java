@@ -17,7 +17,10 @@ public enum CommandList {
     ORDER_INFO(new OrderInfo()),
     ORDER_DELETE(new OrderDelete()),
     ORDER_PAY(new OrderPay()),
-    ORDER_BILL(new OrderBill());
+    ORDER_BILL(new OrderBill()),
+    ORDER_APPROVE(new OrderApprove()),
+    GET_ORDERS(new AllOrders()),
+    GET_USERS(new AllUsers());
 
     private final Command command;
 
@@ -26,6 +29,6 @@ public enum CommandList {
     }
 
     public Command getCommand() {
-        return command;
+        return this.command;
     }
 }
