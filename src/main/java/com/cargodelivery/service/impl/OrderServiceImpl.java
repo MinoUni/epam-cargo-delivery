@@ -79,19 +79,14 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public User payForOrder(int orderId, User user) throws OrderServiceException {
         try {
-            Optional<User> userDetails = getUserAfterPayment(orderId, user);
-            if (userDetails.isEmpty()) {
-                LOG.warn("Failed to find user={}", user.getLogin());
-                throw new OrderServiceException(String.format("User=%s not exists", user.getLogin()));
-            }
-            return userDetails.get();
+            return getUserAfterPayment(orderId, user);
         } catch (DBException e) {
             LOG.error(e.getMessage(), e);
             throw new OrderServiceException(e.getMessage());
         }
     }
 
-    private Optional<User> getUserAfterPayment(int orderId, User user) throws DBException, OrderServiceException {
+    private User getUserAfterPayment(int orderId, User user) throws DBException, OrderServiceException {
         Optional<User> userDetails = userRepository.findByField(user.getLogin());
         Optional<Order> orderDetails = orderRepository.findByField(orderId);
 
@@ -122,7 +117,7 @@ public class OrderServiceImpl implements OrderService {
         userRepository.update(userDetails.get());
         orderRepository.update(orderDetails.get());
 
-        return userRepository.findByField(userDetails.get().getLogin());
+        return userDetails.get();
     }
 
     @Override

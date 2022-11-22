@@ -1,7 +1,10 @@
 package com.cargodelivery.service.impl;
 
-import com.cargodelivery.dao.entity.*;
-import com.cargodelivery.dao.impl.CargoDaoImpl;
+import com.cargodelivery.dao.entity.Cargo;
+import com.cargodelivery.dao.entity.Order;
+import com.cargodelivery.dao.entity.User;
+import com.cargodelivery.dao.entity.enums.OrderState;
+import com.cargodelivery.dao.entity.enums.UserRole;
 import com.cargodelivery.dao.impl.OrderDaoImpl;
 import com.cargodelivery.dao.impl.UserDaoImpl;
 import com.cargodelivery.exception.DBException;
@@ -22,21 +25,19 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class OrderServiceImplTest {
 
-    private final CargoDaoImpl cargoRepoMock = mock(CargoDaoImpl.class);
     private final OrderDaoImpl orderRepoMock = mock(OrderDaoImpl.class);
     private final UserDaoImpl userRepoMock = mock(UserDaoImpl.class);
-    private final OrderServiceImpl orderService = new OrderServiceImpl(cargoRepoMock, orderRepoMock, userRepoMock);
-    private Order testOrder;
-    private User testUser;
+    private final OrderServiceImpl orderService = new OrderServiceImpl(orderRepoMock, userRepoMock);
     private Cargo testCargo;
+    private User testUser;
+    private Order testOrder;
 
     @BeforeEach
     void setup() {
-        testOrder = new Order(1, "testId", 1, BigDecimal.valueOf(10.00),
-                "testRouteStart", "testRouteEnd",
-                new Date(10000), new Date(30000), OrderState.REGISTERED);
-        testUser = new User("testId", "name", "surname", "email", "pass", UserRole.USER, BigDecimal.valueOf(200));
         testCargo = new Cargo(1, 11.1, 11.1, 11.1);
+        testUser = new User("testId", "name", "surname", "email", "pass", new Date(10000), UserRole.USER);
+        testOrder = new Order(1, 1, "route", testCargo, new Date(10000), new Date(30000), OrderState.WAITING_FOR_PAYMENT, BigDecimal.valueOf(10.00));
+        testUser.setBalance(BigDecimal.valueOf(200));
     }
 
     @Test
@@ -62,13 +63,13 @@ class OrderServiceImplTest {
     @Test
     void findAllUserOrdersSuccessfullyTest() throws DBException {
         when(userRepoMock.isExist(any(User.class))).thenReturn(Boolean.TRUE);
-        when(orderRepoMock.findAllOrdersByUserId(any(User.class))).thenReturn(List.of(testOrder));
+        when(orderRepoMock.findUserOrders(any(User.class))).thenReturn(List.of(testOrder));
 
         var userOrders = assertDoesNotThrow(() -> orderService.findAllUserOrders(testUser));
         assertTrue(userOrders.contains(testOrder));
 
         verify(userRepoMock, times(1)).isExist(any(User.class));
-        verify(orderRepoMock, times(1)).findAllOrdersByUserId(any(User.class));
+        verify(orderRepoMock, times(1)).findUserOrders(any(User.class));
     }
 
     @Test
@@ -79,69 +80,19 @@ class OrderServiceImplTest {
         assertEquals("User not exist", excMessage.getMessage());
 
         verify(userRepoMock, times(1)).isExist(any(User.class));
-        verify(orderRepoMock, times(0)).findAllOrdersByUserId(any(User.class));
+        verify(orderRepoMock, times(0)).findUserOrders(any(User.class));
     }
 
     @Test
     void findAllUserOrdersFailedWithDBExceptionTest() throws DBException {
         when(userRepoMock.isExist(any(User.class))).thenReturn(Boolean.TRUE);
-        when(orderRepoMock.findAllOrdersByUserId(any(User.class))).thenThrow(new DBException("[TEST]:Failed to get user orders"));
+        when(orderRepoMock.findUserOrders(any(User.class))).thenThrow(new DBException("[TEST]:Failed to get user orders"));
 
         var excMessage = assertThrows(OrderServiceException.class, () -> orderService.findAllUserOrders(testUser));
         assertTrue(excMessage.getMessage().contains("[TEST]:Failed to get user orders"));
 
         verify(userRepoMock, times(1)).isExist(any(User.class));
-        verify(orderRepoMock, times(1)).findAllOrdersByUserId(any(User.class));
-    }
-
-    @Test
-    void findCargoSuccessfullyTest() throws DBException {
-        String cargoId = "1";
-
-        when(cargoRepoMock.isExist(any(Integer.class))).thenReturn(Boolean.TRUE);
-        when(cargoRepoMock.findById(any(Integer.class))).thenReturn(Optional.ofNullable(testCargo));
-
-        var cargo = assertDoesNotThrow(() -> orderService.findCargo(cargoId));
-        assertNotNull(cargo);
-        assertEquals(cargo.getId(), testCargo.getId());
-
-        verify(cargoRepoMock, times(1)).isExist(any(Integer.class));
-        verify(cargoRepoMock, times(1)).findById(any(Integer.class));
-    }
-
-    @Test
-    void findCargoFailedWithParseExceptionTest() throws DBException {
-        String cargoId = "cargoId";
-        var exceptionMessage = assertThrows(OrderServiceException.class, () -> orderService.findCargo(cargoId));
-        assertEquals(String.format("Invalid to parse param=%s", cargoId), exceptionMessage.getMessage());
-        verify(cargoRepoMock, times(0)).isExist(any(Integer.class));
-    }
-
-    @Test
-    void findCargoFailedWithNotExistExceptionTest() throws DBException {
-        String cargoId = "9999";
-
-        when(cargoRepoMock.isExist(any(Integer.class))).thenReturn(Boolean.FALSE);
-
-        var exceptionMessage = assertThrows(OrderServiceException.class, () -> orderService.findCargo(cargoId));
-        assertEquals(String.format("Cargo with cargoId=[%s] not exist", cargoId), exceptionMessage.getMessage());
-
-        verify(cargoRepoMock, times(1)).isExist(any(Integer.class));
-        verify(cargoRepoMock, times(0)).findById(any(Integer.class));
-    }
-
-    @Test
-    void findCargoFailedWithDBExceptionTest() throws DBException {
-        String cargoId = "8888";
-
-        when(cargoRepoMock.isExist(any(Integer.class))).thenReturn(Boolean.TRUE);
-        when(cargoRepoMock.findById(any(Integer.class))).thenThrow(new DBException("[TEST]:Failed to get a cargo by it id from database"));
-
-        var exceptionMessage = assertThrows(OrderServiceException.class, () -> orderService.findCargo(cargoId));
-        assertTrue(exceptionMessage.getMessage().contains("[TEST]:Failed to get a cargo by it id from database"));
-
-        verify(cargoRepoMock, times(1)).isExist(any(Integer.class));
-        verify(cargoRepoMock, times(1)).findById(any(Integer.class));
+        verify(orderRepoMock, times(1)).findUserOrders(any(User.class));
     }
 
     @Test
@@ -164,360 +115,243 @@ class OrderServiceImplTest {
     }
 
     @Test
-    void saveCargoSuccessfullyTest() throws DBException {
-        when(cargoRepoMock.save(any(Cargo.class))).thenReturn(testCargo);
+    void deleteOrderFailedWithOrderIdNotFoundException() throws DBException {
+        when(orderRepoMock.findByField(any(Integer.class))).thenReturn(Optional.empty());
 
-        var cargo = assertDoesNotThrow(() -> orderService.saveCargo(testCargo));
-        assertEquals(testCargo.getId(), cargo.getId());
+        var exceptionMessage = assertThrows(OrderServiceException.class, () -> orderService.deleteOrder(testOrder.getId()));
+        assertTrue(exceptionMessage.getMessage().contains(String.format(String.format("Order with orderId=[%s] not exist", testOrder.getId()))));
 
-        verify(cargoRepoMock, times(1)).save(any(Cargo.class));
-    }
-
-    @Test
-    void saveCargoFailedWithDBException() throws DBException {
-        when(cargoRepoMock.save(any(Cargo.class))).thenThrow(new DBException("[TEST]:Failed to save a new cargo"));
-
-        var excMessage = assertThrows(OrderServiceException.class, () -> orderService.saveCargo(testCargo));
-        assertTrue(excMessage.getMessage().contains("[TEST]:Failed to save a new cargo"));
-
-        verify(cargoRepoMock, times(1)).save(any(Cargo.class));
-    }
-
-    @Test
-    void deleteOrderFailedWithOrderIdOrCargoIdParseException() throws DBException {
-        String invalidOrderId = "invalidOrder";
-        String validOrderId = "4444";
-        String cargoId = "invalidCargo";
-
-        var excOrderMessage = assertThrows(OrderServiceException.class, () -> orderService.deleteOrder(invalidOrderId, cargoId));
-        assertEquals(String.format("Invalid to parse param=%s", invalidOrderId),excOrderMessage.getMessage());
-
-        var excCargoMessage = assertThrows(OrderServiceException.class, () -> orderService.deleteOrder(validOrderId, cargoId));
-        assertEquals(String.format("Invalid to parse param=%s", cargoId),excCargoMessage.getMessage());
-
-        verify(orderRepoMock, times(0)).deleteById(any(Integer.class));
-        verify(orderRepoMock, times(0)).isExist(any(Integer.class));
-    }
-
-    @Test
-    void deleteOrderFailedWithNotExistExceptionTest() throws DBException {
-        String orderId = "9999";
-        String cargoId = "9999";
-
-        when(orderRepoMock.isExist(any(Integer.class))).thenReturn(Boolean.FALSE);
-
-        var exceptionMessage = assertThrows(OrderServiceException.class, () -> orderService.deleteOrder(orderId, cargoId));
-        assertEquals(String.format("Order with orderId=[%s] not exist", orderId), exceptionMessage.getMessage());
-
-        verify(orderRepoMock, times(1)).isExist(any(Integer.class));
+        verify(orderRepoMock, times(1)).findByField(any(Integer.class));
         verify(orderRepoMock, times(0)).deleteById(any(Integer.class));
     }
 
     @Test
-    void deleteOrderFailedWithOrderDBExceptionTest() throws DBException {
-        String orderId = "3333";
-        String cargoId = "3333";
+    void deleteOrderFailedWithFindByFieldDBException() throws DBException {
+        when(orderRepoMock.findByField(any(Integer.class))).thenThrow(new DBException("[TEST]:Failed to read order details from db"));
 
-        when(orderRepoMock.isExist(any(Integer.class))).thenReturn(Boolean.TRUE);
-        doThrow(new DBException(String.format("[TEST]:Failed to delete order with orderId=%s", orderId))).when(orderRepoMock).deleteById(any(Integer.class));
+        var exceptionMessage = assertThrows(OrderServiceException.class, () -> orderService.deleteOrder(testOrder.getId()));
+        assertTrue(exceptionMessage.getMessage().contains("[TEST]:Failed to read order details from db"));
 
-        var excMessage = assertThrows(OrderServiceException.class, () -> orderService.deleteOrder(orderId, cargoId));
-        assertTrue(excMessage.getMessage().contains(String.format("[TEST]:Failed to delete order with orderId=%s", orderId)));
-
-        verify(orderRepoMock, times(1)).isExist(any(Integer.class));
-        verify(orderRepoMock, times(1)).deleteById(any(Integer.class));
-        verify(orderRepoMock, times(0)).isExistOrderWithCargoId(any(Integer.class));
+        verify(orderRepoMock, times(1)).findByField(any(Integer.class));
+        verify(orderRepoMock, times(0)).deleteById(any(Integer.class));
     }
 
     @Test
-    void deleteOrderFailedWithExistAnotherOrderWithCargoDBExceptionTest() throws DBException {
-        String orderId = "2222";
-        String cargoId = "2222";
+    void deleteOrderFailedWithDeleteByIdDBExceptionTest() throws DBException {
+        when(orderRepoMock.findByField(any(Integer.class))).thenReturn(Optional.ofNullable(testOrder));
+        doThrow(new DBException("[TEST]:Failed to delete order from db")).when(orderRepoMock).deleteById(any(Integer.class));
 
-        when(orderRepoMock.isExist(any(Integer.class))).thenReturn(Boolean.TRUE);
-        doNothing().when(orderRepoMock).deleteById(any(Integer.class));
-        when(orderRepoMock.isExistOrderWithCargoId(any(Integer.class)))
-                .thenThrow(new DBException(String.format("[TEST]:Failed to check order=%s existence with cargoId=%s", orderId, cargoId)));
+        var excMessage = assertThrows(OrderServiceException.class, () -> orderService.deleteOrder(testOrder.getId()));
+        assertTrue(excMessage.getMessage().contains("[TEST]:Failed to delete order from db"));
 
-        var message = assertThrows(OrderServiceException.class, () -> orderService.deleteOrder(orderId, cargoId));
-        assertTrue(message.getMessage().contains(String.format("[TEST]:Failed to check order=%s existence with cargoId=%s", orderId, cargoId)));
-
-        verify(orderRepoMock, times(1)).isExist(any(Integer.class));
+        verify(orderRepoMock, times(1)).findByField(any(Integer.class));
         verify(orderRepoMock, times(1)).deleteById(any(Integer.class));
-        verify(orderRepoMock, times(1)).isExistOrderWithCargoId(any(Integer.class));
-        verify(cargoRepoMock, times(0)).deleteById(any(Integer.class));
-    }
-
-    @Test
-    void deleteOrderFailedWithExistAnotherOrderWithCargoTest() throws DBException {
-        String orderId = "8546";
-        String cargoId = "8546";
-
-        when(orderRepoMock.isExist(any(Integer.class))).thenReturn(Boolean.TRUE);
-        doNothing().when(orderRepoMock).deleteById(any(Integer.class));
-        when(orderRepoMock.isExistOrderWithCargoId(any(Integer.class))).thenReturn(Boolean.TRUE);
-
-        var message = assertThrows(OrderServiceException.class, () -> orderService.deleteOrder(orderId, cargoId));
-        assertTrue(message.getMessage().contains(String.format("There are another order with that cargo=%s", cargoId)));
-
-        verify(orderRepoMock, times(1)).isExist(any(Integer.class));
-        verify(orderRepoMock, times(1)).deleteById(any(Integer.class));
-        verify(orderRepoMock, times(1)).isExistOrderWithCargoId(any(Integer.class));
-        verify(cargoRepoMock, times(0)).deleteById(any(Integer.class));
-    }
-
-    @Test
-    void deleteOrderFailedWithDeleteCargoDBExceptionTest() throws DBException {
-        String orderId = "8546";
-        String cargoId = "8546";
-
-        when(orderRepoMock.isExist(any(Integer.class))).thenReturn(Boolean.TRUE);
-        doNothing().when(orderRepoMock).deleteById(any(Integer.class));
-        when(orderRepoMock.isExistOrderWithCargoId(any(Integer.class))).thenReturn(Boolean.FALSE);
-        doThrow(new DBException(String.format("[TEST]:Failed to delete cargo=%s", cargoId))).when(cargoRepoMock).deleteById(any(Integer.class));
-
-        var message = assertThrows(OrderServiceException.class, () -> orderService.deleteOrder(orderId, cargoId));
-        assertTrue(message.getMessage().contains(String.format("[TEST]:Failed to delete cargo=%s", cargoId)));
-
-        verify(orderRepoMock, times(1)).isExist(any(Integer.class));
-        verify(orderRepoMock, times(1)).deleteById(any(Integer.class));
-        verify(orderRepoMock, times(1)).isExistOrderWithCargoId(any(Integer.class));
-        verify(cargoRepoMock, times(1)).deleteById(any(Integer.class));
-
     }
 
     @Test
     void deleteOrderSuccessfullyTest() throws DBException {
-        String orderId = "8546";
-        String cargoId = "8546";
-
-        when(orderRepoMock.isExist(any(Integer.class))).thenReturn(Boolean.TRUE);
+        when(orderRepoMock.findByField(any(Integer.class))).thenReturn(Optional.ofNullable(testOrder));
         doNothing().when(orderRepoMock).deleteById(any(Integer.class));
-        when(orderRepoMock.isExistOrderWithCargoId(any(Integer.class))).thenReturn(Boolean.FALSE);
-        doNothing().when(cargoRepoMock).deleteById(any(Integer.class));
 
-        assertDoesNotThrow(() -> orderService.deleteOrder(orderId, cargoId));
+        assertDoesNotThrow(() -> orderService.deleteOrder(testOrder.getId()));
 
-        verify(orderRepoMock, times(1)).isExist(any(Integer.class));
         verify(orderRepoMock, times(1)).deleteById(any(Integer.class));
-        verify(orderRepoMock, times(1)).isExistOrderWithCargoId(any(Integer.class));
-        verify(cargoRepoMock, times(1)).deleteById(any(Integer.class));
+        verify(orderRepoMock, times(1)).deleteById(any(Integer.class));
     }
 
     @Test
-    void updateOrderStateSuccessfullyTest() throws DBException {
-        String orderId = "99221";
+    void updateStateSuccessfullyTest() throws DBException {
+        var state = OrderState.WAITING_FOR_PAYMENT;
+
+        when(orderRepoMock.findByField(any(Integer.class))).thenReturn(Optional.ofNullable(testOrder));
+        doNothing().when(orderRepoMock).update(any(Order.class));
+
+        assertDoesNotThrow(() -> orderService.updateState(testOrder.getId(), state));
+
+        verify(orderRepoMock, times(1)).findByField(any(Integer.class));
+        verify(orderRepoMock, times(1)).update(any(Order.class));
+    }
+
+    @Test
+    void updateStateFailedFindByFieldDBExceptionTest() throws DBException {
+        var state = OrderState.WAITING_FOR_PAYMENT;
+
+        when(orderRepoMock.findByField(any(Integer.class))).thenThrow(new DBException("[TEST]:Failed to read order from db"));
+
+        var exceptionMessage = assertThrows(OrderServiceException.class, () -> orderService.updateState(testOrder.getId(), state));
+        assertTrue(exceptionMessage.getMessage().contains("[TEST]:Failed to read order from db"));
+
+        verify(orderRepoMock, times(1)).findByField(any(Integer.class));
+        verify(orderRepoMock, times(0)).update(any(Order.class));
+    }
+
+    @Test
+    void updateStateFailedWithNotExistTest() throws DBException {
         OrderState state = OrderState.REGISTERED;
+        when(orderRepoMock.findByField(any(Integer.class))).thenReturn(Optional.empty());
 
-        when(orderRepoMock.isExist(any(Integer.class))).thenReturn(Boolean.TRUE);
-        doNothing().when(orderRepoMock).updateOrderState(any(Integer.class), any(OrderState.class));
+        var excMessage = assertThrows(OrderServiceException.class, () -> orderService.updateState(testOrder.getId(), state));
+        assertEquals("No order was found in db", excMessage.getMessage());
 
-        assertDoesNotThrow(() -> orderService.updateOrderState(orderId, state));
-
-        verify(orderRepoMock, times(1)).isExist(any(Integer.class));
-        verify(orderRepoMock, times(1)).updateOrderState(any(Integer.class), any(OrderState.class));
+        verify(orderRepoMock, times(1)).findByField(any(Integer.class));
+        verify(orderRepoMock, times(0)).update(any(Order.class));
     }
 
     @Test
-    void updateOrderStateFailedWithParseExceptionTest() throws DBException {
-        String orderId = "invalidValue";
-        OrderState state = OrderState.REGISTERED;
+    void updateStateFailedWithUpdateDBExceptionTest() throws DBException {
+        var state = OrderState.WAITING_FOR_PAYMENT;
 
-        var exceptionMessage = assertThrows(OrderServiceException.class, () -> orderService.updateOrderState(orderId, state));
+        when(orderRepoMock.findByField(any(Integer.class))).thenReturn(Optional.ofNullable(testOrder));
+        doThrow(new DBException("[TEST]:Failed to delete order from db")).when(orderRepoMock).update(any(Order.class));
 
-        assertEquals(String.format("Invalid to parse param=%s", orderId), exceptionMessage.getMessage());
+        var excMessage = assertThrows(OrderServiceException.class, () -> orderService.updateState(testOrder.getId(), state));
+        assertTrue(excMessage.getMessage().contains("[TEST]:Failed to delete order from db"));
 
-        verify(orderRepoMock, times(0)).isExist(any(Integer.class));
+        verify(orderRepoMock, times(1)).findByField(any(Integer.class));
+        verify(orderRepoMock, times(1)).update(any(Order.class));
     }
 
     @Test
-    void updateOrderStateFailedWithNotExistTest() throws DBException {
-        String orderId = "9922";
-        OrderState state = OrderState.REGISTERED;
+    void getOrdersLimitSuccessfullyTest() throws DBException {
+        when(orderRepoMock.findAllBetween(any(int.class), any(int.class))).thenReturn(List.of(testOrder));
+        var orders = assertDoesNotThrow(() -> orderService.getOrdersLimit(1));
+        assertTrue(orders.contains(testOrder));
 
-        when(orderRepoMock.isExist(any(Integer.class))).thenReturn(Boolean.FALSE);
-
-        var excMessage = assertThrows(OrderServiceException.class, () -> orderService.updateOrderState(orderId, state));
-        assertEquals(String.format("Order with orderId=%s not exist", orderId), excMessage.getMessage());
-
-        verify(orderRepoMock, times(1)).isExist(any(Integer.class));
-        verify(orderRepoMock, times(0)).updateOrderState(any(Integer.class), any(OrderState.class));
+        verify(orderRepoMock, times(1)).findAllBetween(any(int.class), any(int.class));
     }
 
     @Test
-    void updateOrderStateFailedWithDBExceptionTest() throws DBException {
-        String orderId = "99221";
-        OrderState state = OrderState.REGISTERED;
+    void getOrdersLimitFailedWithDBExceptionTest() throws DBException {
+        when(orderRepoMock.findAllBetween(any(int.class), any(int.class))).thenThrow(new DBException("[TEST]:Failed to read orders limit from db"));
 
-        when(orderRepoMock.isExist(any(Integer.class))).thenReturn(Boolean.TRUE);
-        doThrow(new DBException("[TEST]:Failed to update order state")).when(orderRepoMock).updateOrderState(any(Integer.class), any(OrderState.class));
+        var exceptionMessage = assertThrows(OrderServiceException.class, () -> orderService.getOrdersLimit(1));
+        assertTrue(exceptionMessage.getMessage().contains("[TEST]:Failed to read orders limit from db"));
 
-        var excMessage = assertThrows(OrderServiceException.class, () -> orderService.updateOrderState(orderId, state));
-        assertTrue(excMessage.getMessage().contains("[TEST]:Failed to update order state"));
-
-        verify(orderRepoMock, times(1)).isExist(any(Integer.class));
-        verify(orderRepoMock, times(1)).updateOrderState(any(Integer.class), any(OrderState.class));
+        verify(orderRepoMock, times(1)).findAllBetween(any(int.class), any(int.class));
     }
 
     @Test
-    void payForOrderFailedWithParseExceptionTest() throws DBException {
-        String orderId = "invalidId";
+    void getNumbOfPagesSuccessfullyTest() throws DBException {
+        int numbOfRecords = 10;
+        when(orderRepoMock.countNumbOfRecords(any(String.class))).thenReturn(numbOfRecords);
 
-        var excMessage = assertThrows(OrderServiceException.class, () -> orderService.payForOrder(orderId, testUser));
-        assertEquals(String.format("Invalid to parse param=%s", orderId), excMessage.getMessage());
+        var result = assertDoesNotThrow(orderService::getNumbOfPages);
+        assertEquals(2, result);
 
-        verify(userRepoMock, times(0)).isExist(any(User.class));
+        verify(orderRepoMock, times(1)).countNumbOfRecords(any(String.class));
     }
 
     @Test
-    void payForOrderFailedWithUserNotExistTest() throws DBException {
-        String orderId = "5351";
+    void getNumbOfPagesFailedWithDBExceptionTest() throws DBException {
+        when(orderRepoMock.countNumbOfRecords(any(String.class))).thenThrow(new DBException("[TEST]:Failed to read number of records"));
 
-        when(userRepoMock.isExist(any(User.class))).thenReturn(Boolean.FALSE);
+        var exceptionMessage = assertThrows(OrderServiceException.class, orderService::getNumbOfPages);
+        assertTrue(exceptionMessage.getMessage().contains("[TEST]:Failed to read number of records"));
 
-        var excMessage = assertThrows(OrderServiceException.class, () -> orderService.payForOrder(orderId, testUser));
-        assertEquals(String.format("User with login=[%s] not exists", testUser.getId()), excMessage.getMessage());
-
-        verify(userRepoMock, times(1)).isExist(any(User.class));
-        verify(orderRepoMock, times(0)).isExist(any(Integer.class));
+        verify(orderRepoMock, times(1)).countNumbOfRecords(any(String.class));
     }
 
     @Test
-    void payForOrderFailedWithOrderNotExistTest() throws DBException {
-        String orderId = "42256";
+    void findOrderSuccessfullyTest() throws DBException {
+        when(orderRepoMock.findByField(any(Integer.class))).thenReturn(Optional.ofNullable(testOrder));
 
-        when(userRepoMock.isExist(any(User.class))).thenReturn(Boolean.TRUE);
-        when(orderRepoMock.isExist(any(Integer.class))).thenReturn(Boolean.FALSE);
+        var order = assertDoesNotThrow(() -> orderService.findOrder(testOrder.getId()));
+        assertEquals(testOrder, order);
 
-        var excMessage = assertThrows(OrderServiceException.class, () -> orderService.payForOrder(orderId, testUser));
-        assertEquals(String.format("Order with orderId=[%s] not exist", orderId), excMessage.getMessage());
-
-        verify(userRepoMock, times(1)).isExist(any(User.class));
-        verify(orderRepoMock, times(1)).isExist(any(Integer.class));
-        verify(userRepoMock, times(0)).getUserBalance(any(User.class));
+        verify(orderRepoMock, times(1)).findByField(any(Integer.class));
     }
 
     @Test
-    void payForOrderFailedWithGetUserBalanceDBExceptionTest() throws DBException {
-        String orderId = "42256";
+    void findOrderFailedWithDBExceptionTest() throws DBException {
+        when(orderRepoMock.findByField(any(Integer.class))).thenThrow(new DBException("[TEST]:Failed to read order from db"));
 
-        when(userRepoMock.isExist(any(User.class))).thenReturn(Boolean.TRUE);
-        when(orderRepoMock.isExist(any(Integer.class))).thenReturn(Boolean.TRUE);
-        when(userRepoMock.getUserBalance(any(User.class))).thenThrow(new DBException(String.format("[TEST]:Failed to get balance for user=%s from db", testUser.getId())));
+        var exceptionMessage = assertThrows(OrderServiceException.class, () -> orderService.findOrder(testOrder.getId()));
+        assertTrue(exceptionMessage.getMessage().contains("[TEST]:Failed to read order from db"));
 
-        var excMessage = assertThrows(OrderServiceException.class, () -> orderService.payForOrder(orderId, testUser));
-        assertTrue(excMessage.getMessage().contains(String.format("[TEST]:Failed to get balance for user=%s from db", testUser.getId())));
-
-        verify(userRepoMock, times(1)).isExist(any(User.class));
-        verify(orderRepoMock, times(1)).isExist(any(Integer.class));
-        verify(userRepoMock, times(1)).getUserBalance(any(User.class));
-        verify(orderRepoMock, times(0)).findOrderPrice(any(Integer.class));
+        verify(orderRepoMock, times(1)).findByField(any(Integer.class));
     }
 
     @Test
-    void payForOrderFailedWithGetOrderPriceDBExceptionTest() throws DBException {
-        String orderId = "42256";
+    void findOrderFailedWithNotFoundTest() throws DBException {
+        when(orderRepoMock.findByField(any(Integer.class))).thenReturn(Optional.empty());
 
-        when(userRepoMock.isExist(any(User.class))).thenReturn(Boolean.TRUE);
-        when(orderRepoMock.isExist(any(Integer.class))).thenReturn(Boolean.TRUE);
-        when(userRepoMock.getUserBalance(any(User.class))).thenReturn(BigDecimal.valueOf(10));
-        when(orderRepoMock.findOrderPrice(any(Integer.class))).thenThrow(new DBException(String.format("[TEST]:Failed to get price for order=%s from db", orderId)));
+        var exceptionMessage = assertThrows(OrderServiceException.class, () -> orderService.findOrder(testOrder.getId()));
+        assertTrue(exceptionMessage.getMessage().contains("No order was found in db"));
 
-        var excMessage = assertThrows(OrderServiceException.class, () -> orderService.payForOrder(orderId, testUser));
-        assertTrue(excMessage.getMessage().contains(String.format("[TEST]:Failed to get price for order=%s from db", orderId)));
-
-        verify(userRepoMock, times(1)).isExist(any(User.class));
-        verify(orderRepoMock, times(1)).isExist(any(Integer.class));
-        verify(userRepoMock, times(1)).getUserBalance(any(User.class));
-        verify(orderRepoMock, times(1)).findOrderPrice(any(Integer.class));
-        verify(userRepoMock, times(0)).updateUserBalance(any(User.class), any(BigDecimal.class));
-    }
-
-    @Test
-    void payForOrderFailedWithSubtractOperationTest() throws DBException {
-        String orderId = "42256";
-
-        when(userRepoMock.isExist(any(User.class))).thenReturn(Boolean.TRUE);
-        when(orderRepoMock.isExist(any(Integer.class))).thenReturn(Boolean.TRUE);
-        when(userRepoMock.getUserBalance(any(User.class))).thenReturn(BigDecimal.valueOf(10));
-        when(orderRepoMock.findOrderPrice(any(Integer.class))).thenReturn(BigDecimal.valueOf(100));
-
-        var excMessage = assertThrows(OrderServiceException.class, () -> orderService.payForOrder(orderId, testUser));
-        assertTrue(excMessage.getMessage().contains("Low balance"));
-
-        verify(userRepoMock, times(1)).isExist(any(User.class));
-        verify(orderRepoMock, times(1)).isExist(any(Integer.class));
-        verify(userRepoMock, times(1)).getUserBalance(any(User.class));
-        verify(orderRepoMock, times(1)).findOrderPrice(any(Integer.class));
-        verify(userRepoMock, times(0)).updateUserBalance(any(User.class), any(BigDecimal.class));
-    }
-
-    @Test
-    void payForOrderFailedWithUpdateUserBalanceOperationTest() throws DBException {
-        String orderId = "42256";
-
-        when(userRepoMock.isExist(any(User.class))).thenReturn(Boolean.TRUE);
-        when(orderRepoMock.isExist(any(Integer.class))).thenReturn(Boolean.TRUE);
-        when(userRepoMock.getUserBalance(any(User.class))).thenReturn(BigDecimal.valueOf(100));
-        when(orderRepoMock.findOrderPrice(any(Integer.class))).thenReturn(BigDecimal.valueOf(50));
-        doThrow(new DBException("[TEST]:Failed to update balance for user")).when(userRepoMock).updateUserBalance(any(User.class), any(BigDecimal.class));
-
-        var excMessage = assertThrows(OrderServiceException.class, () -> orderService.payForOrder(orderId, testUser));
-        assertTrue(excMessage.getMessage().contains("[TEST]:Failed to update balance for user"));
-
-        verify(userRepoMock, times(1)).isExist(any(User.class));
-        verify(orderRepoMock, times(1)).isExist(any(Integer.class));
-        verify(userRepoMock, times(1)).getUserBalance(any(User.class));
-        verify(orderRepoMock, times(1)).findOrderPrice(any(Integer.class));
-        verify(userRepoMock, times(1)).updateUserBalance(any(User.class), any(BigDecimal.class));
-        verify(orderRepoMock, times(0)).updateOrderState(any(Integer.class), any(OrderState.class));
-    }
-
-    @Test
-    void payForOrderFailedWithUpdateOrderStateOperationTest() throws DBException {
-        String orderId = "42256";
-
-        when(userRepoMock.isExist(any(User.class))).thenReturn(Boolean.TRUE);
-        when(orderRepoMock.isExist(any(Integer.class))).thenReturn(Boolean.TRUE);
-        when(userRepoMock.getUserBalance(any(User.class))).thenReturn(BigDecimal.valueOf(100));
-        when(orderRepoMock.findOrderPrice(any(Integer.class))).thenReturn(BigDecimal.valueOf(50));
-        doNothing().when(userRepoMock).updateUserBalance(any(User.class), any(BigDecimal.class));
-        doThrow(new DBException("[TEST]:Failed to update state for order")).when(orderRepoMock).updateOrderState(any(Integer.class), any(OrderState.class));
-
-        var excMessage = assertThrows(OrderServiceException.class, () -> orderService.payForOrder(orderId, testUser));
-        assertTrue(excMessage.getMessage().contains("[TEST]:Failed to update state for order"));
-
-        verify(userRepoMock, times(1)).isExist(any(User.class));
-        verify(orderRepoMock, times(1)).isExist(any(Integer.class));
-        verify(userRepoMock, times(1)).getUserBalance(any(User.class));
-        verify(orderRepoMock, times(1)).findOrderPrice(any(Integer.class));
-        verify(userRepoMock, times(1)).updateUserBalance(any(User.class), any(BigDecimal.class));
-        verify(orderRepoMock, times(1)).updateOrderState(any(Integer.class), any(OrderState.class));
+        verify(orderRepoMock, times(1)).findByField(any(Integer.class));
     }
 
     @Test
     void payForOrderSuccessfullyTest() throws DBException {
-        String orderId = "42256";
+        when(userRepoMock.findByField(any(String.class))).thenReturn(Optional.ofNullable(testUser));
+        when(orderRepoMock.findByField(any(Integer.class))).thenReturn(Optional.ofNullable(testOrder));
 
-        when(userRepoMock.isExist(any(User.class))).thenReturn(Boolean.TRUE);
-        when(orderRepoMock.isExist(any(Integer.class))).thenReturn(Boolean.TRUE);
-        when(userRepoMock.getUserBalance(any(User.class))).thenReturn(testUser.getBalance());
-        when(orderRepoMock.findOrderPrice(any(Integer.class))).thenReturn(testOrder.getPrice());
-        doNothing().when(userRepoMock).updateUserBalance(any(User.class), any(BigDecimal.class));
-        doNothing().when(orderRepoMock).updateOrderState(any(Integer.class), any(OrderState.class));
-        when(userRepoMock.findById(any(User.class))).thenReturn(Optional.ofNullable(testUser));
+        assertDoesNotThrow(() -> orderService.payForOrder(testOrder.getId(), testUser));
 
-        var userAfterPayment = assertDoesNotThrow(() -> orderService.payForOrder(orderId, testUser));
-        assertNotNull(userAfterPayment);
-        assertEquals(testUser.getId(), userAfterPayment.getId());
-
-        verify(userRepoMock, times(1)).isExist(any(User.class));
-        verify(orderRepoMock, times(1)).isExist(any(Integer.class));
-        verify(userRepoMock, times(1)).getUserBalance(any(User.class));
-        verify(orderRepoMock, times(1)).findOrderPrice(any(Integer.class));
-        verify(userRepoMock, times(1)).updateUserBalance(any(User.class), any(BigDecimal.class));
-        verify(orderRepoMock, times(1)).updateOrderState(any(Integer.class), any(OrderState.class));
-        verify(userRepoMock, times(1)).findById(any(User.class));
+        verify(userRepoMock, times(1)).findByField(any(String.class));
+        verify(orderRepoMock, times(1)).findByField(any(Integer.class));
     }
 
+    @Test
+    void payForOrderFailedWithInvalidOrderStateTest() throws DBException {
+       var invalidOrder = new Order(1, 1, "route", testCargo, new Date(10000), new Date(30000), OrderState.PAID, BigDecimal.valueOf(10.00));
+
+        when(userRepoMock.findByField(any(String.class))).thenReturn(Optional.ofNullable(testUser));
+        when(orderRepoMock.findByField(any(Integer.class))).thenReturn(Optional.of(invalidOrder));
+
+        var exception = assertThrows(OrderServiceException.class, () -> orderService.payForOrder(testOrder.getId(), testUser));
+        assertTrue(exception.getMessage().contains(String.format("Invalid state=%s for order=%d", invalidOrder.getState().toString(), invalidOrder.getId())));
+
+        verify(userRepoMock, times(1)).findByField(any(String.class));
+        verify(orderRepoMock, times(1)).findByField(any(Integer.class));
+    }
+
+    @Test
+    void payForOrderFailedWithUserNotFoundTest() throws DBException {
+        when(userRepoMock.findByField(any(String.class))).thenReturn(Optional.empty());
+        when(orderRepoMock.findByField(any(Integer.class))).thenReturn(Optional.ofNullable(testOrder));
+
+        var exception = assertThrows(OrderServiceException.class, () -> orderService.payForOrder(testOrder.getId(), testUser));
+        assertTrue(exception.getMessage().contains(String.format("User=%s not exists", testUser.getLogin())));
+
+        verify(userRepoMock, times(1)).findByField(any(String.class));
+        verify(orderRepoMock, times(1)).findByField(any(Integer.class));
+    }
+
+    @Test
+    void payForOrderFailedWithOrderNotFoundTest() throws DBException {
+        when(userRepoMock.findByField(any(String.class))).thenReturn(Optional.ofNullable(testUser));
+        when(orderRepoMock.findByField(any(Integer.class))).thenReturn(Optional.empty());
+
+        var exception = assertThrows(OrderServiceException.class, () -> orderService.payForOrder(testOrder.getId(), testUser));
+        assertTrue(exception.getMessage().contains(String.format("Order=%d not exist", testOrder.getId())));
+
+        verify(userRepoMock, times(1)).findByField(any(String.class));
+        verify(orderRepoMock, times(1)).findByField(any(Integer.class));
+    }
+
+    @Test
+    void payForOrderFailedWithUserLowBalanceTest() throws DBException {
+        var invalidExpensiveOrder = new Order(1, 1, "route", testCargo, new Date(10000), new Date(30000), OrderState.WAITING_FOR_PAYMENT, BigDecimal.valueOf(999_999.00));
+        when(userRepoMock.findByField(any(String.class))).thenReturn(Optional.ofNullable(testUser));
+        when(orderRepoMock.findByField(any(Integer.class))).thenReturn(Optional.of(invalidExpensiveOrder));
+
+        var exception = assertThrows(OrderServiceException.class, () -> orderService.payForOrder(testOrder.getId(), testUser));
+        assertTrue(exception.getMessage().contains(String.format("User=%s balance too low to make a purchase", testUser.getLogin())));
+
+        verify(userRepoMock, times(1)).findByField(any(String.class));
+        verify(orderRepoMock, times(1)).findByField(any(Integer.class));
+    }
+
+    @Test
+    void payForOrderFailedWithUserFindByFieldDBExceptionTest() throws DBException {
+        when(userRepoMock.findByField(any(String.class))).thenThrow(new DBException("[TEST]:Failed to read user from db"));
+        when(orderRepoMock.findByField(any(Integer.class))).thenReturn(Optional.ofNullable(testOrder));
+
+        var exception = assertThrows(OrderServiceException.class, () -> orderService.payForOrder(testOrder.getId(), testUser));
+        assertTrue(exception.getMessage().contains("[TEST]:Failed to read user from db"));
+
+        verify(userRepoMock, times(1)).findByField(any(String.class));
+        verify(orderRepoMock, times(0)).findByField(any(Integer.class));
+    }
 }
