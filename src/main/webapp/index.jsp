@@ -154,6 +154,12 @@
                     <button type="submit"><fmt:message key="index.section.calc.btn"/></button>
                 </div>
             </c:if>
+            <div class="btn">
+                <button type="button" onclick="calcDeliveryCost()">Calc</button>
+            </div>
+            <div class="btn">
+                <button type="reset">Clear</button>
+            </div>
         </fieldset>
     </form>
 

@@ -1,35 +1,16 @@
-const lang = document.querySelector(".lang"),
-    length = document.querySelector("#ilength"),
-    form = document.querySelector("#form"),
-    route = document.querySelector("#route"),
+const length = document.querySelector("#ilength"),
     width = document.querySelector("#width"),
     height = document.querySelector("#height"),
     weight = document.querySelector("#weight"),
     priceInput = document.querySelector("#pr"),
     priceSpan = document.querySelector("#price");
 
-lang.addEventListener("click", () => {
-    lang.classList.toggle("active");
-});
-
-function getRoute() {
-    switch (route.value) {
-        case "1" :
-            return 750;
-        case "2" :
-            return 450;
-        case "3" :
-            return 2100;
-        case "4" :
-            return 1500;
-    }
-}
-
-function calc() {
-    let route = getRoute();
-    console.log(route);
-    let priceByVolume = (3 * parseInt(length.value) * parseInt(height.value) * parseInt(width.value) + route).toFixed(2);
-    let priceByWeight = (5.6 * parseInt(weight.value) + route).toFixed(2);
+/**
+ * Calculate cost of delivery and display it on the page
+ */
+function calcDeliveryCost() {
+    let priceByVolume = (3 * parseInt(length.value) * parseInt(height.value) * parseInt(width.value)).toFixed(2);
+    let priceByWeight = (5.6 * parseInt(weight.value)).toFixed(2);
     if (parseFloat(priceByVolume) > parseFloat(priceByWeight)) {
         priceSpan.innerText = priceByVolume;
         priceInput.value = parseInt(priceByVolume);
@@ -39,11 +20,8 @@ function calc() {
     }
 }
 
-form.addEventListener("input", () => {
-    calc();
-});
-
 /**
+ * Sorting table columns asc/desc
  *
  * @param {HTMLTableElement} table - table to sort
  * @param {number} column - index of the table column to sort
