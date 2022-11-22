@@ -1,11 +1,10 @@
 package com.cargodelivery.controller.command.impl.post;
 
 import com.cargodelivery.controller.command.Command;
+import com.cargodelivery.controller.command.CommandList;
 import com.cargodelivery.dao.entity.User;
-import com.cargodelivery.dao.impl.UserDaoImpl;
 import com.cargodelivery.exception.UserServiceException;
 import com.cargodelivery.service.UserService;
-import com.cargodelivery.service.impl.UserServiceImpl;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
@@ -18,17 +17,16 @@ public class Login implements Command {
 
     private static final Logger LOG = LoggerFactory.getLogger(Login.class);
     private static final String INDEX_PAGE = "index.jsp";
-    private static final String ERROR_PAGE = "error.jsp";
     private final UserService userService;
 
-    public Login() {
-        userService = new UserServiceImpl(new UserDaoImpl());
+    public Login(UserService userService) {
+        this.userService = userService;
     }
 
     /**
      * @param req  {@link HttpServletRequest}
      * @param resp {@link HttpServletResponse}
-     * @return JSP name url
+     * @return JSP(view) result of the command to ui
      */
     @Override
     public String execute(HttpServletRequest req, HttpServletResponse resp) {
@@ -42,7 +40,7 @@ public class Login implements Command {
         } catch (IllegalArgumentException | UserServiceException e) {
             LOG.error(e.getMessage(), e);
             session.setAttribute("errorMessage", e.getMessage());
-            return ERROR_PAGE;
+            return CommandList.ERROR_PAGE.getCommand().execute(req, resp);
         }
     }
 }
