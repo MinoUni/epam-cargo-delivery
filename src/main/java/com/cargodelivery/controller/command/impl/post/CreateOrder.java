@@ -6,11 +6,8 @@ import com.cargodelivery.dao.entity.Cargo;
 import com.cargodelivery.dao.entity.Order;
 import com.cargodelivery.dao.entity.User;
 import com.cargodelivery.dao.entity.enums.OrderState;
-import com.cargodelivery.dao.impl.OrderDaoImpl;
-import com.cargodelivery.dao.impl.UserDaoImpl;
 import com.cargodelivery.exception.OrderServiceException;
 import com.cargodelivery.service.OrderService;
-import com.cargodelivery.service.impl.OrderServiceImpl;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
@@ -31,18 +28,26 @@ public class CreateOrder implements Command {
     private static final String INDEX_PAGE = "index.jsp";
     private final OrderService orderService;
 
-    public CreateOrder() {
-        orderService = new OrderServiceImpl(new OrderDaoImpl(), new UserDaoImpl());
+    public CreateOrder(OrderService orderService) {
+        this.orderService = orderService;
     }
 
+    /**
+     * Validate data from http request
+     * Build it into DTO{@link Order}
+     * Save order into database
+     *
+     * @param req  {@link HttpServletRequest}
+     * @param res {@link HttpServletResponse}
+     * @return JSP(view) result of the command to ui
+     */
     @Override
-    public String execute(HttpServletRequest req, HttpServletResponse resp) {
+    public String execute(HttpServletRequest req, HttpServletResponse res) {
         HttpSession session = req.getSession();
         User user = (User) session.getAttribute("user");
         try {
             Order order = new Order(
                     user.getId(),
-                    // TODO:REFACTOR ROUTE
                     String.format("%s-%s", checkReqParam(req, "routeStart"), checkReqParam(req, "routeEnd")),
                     new Cargo(
                             Double.parseDouble(checkReqParam(req, "length")),
@@ -61,8 +66,8 @@ public class CreateOrder implements Command {
             session.setAttribute("orderMessage", "* Successfully add order in your profile.");
             return INDEX_PAGE;
         } catch (OrderServiceException | IllegalArgumentException | ParseException e) {
-            req.getSession().setAttribute("errorMessage", e.getMessage());
-            return CommandList.ERROR_PAGE.getCommand().execute(req, resp);
+            session.setAttribute("errorMessage", e.getMessage());
+            return CommandList.ERROR_PAGE.getCommand().execute(req, res);
         }
     }
 
