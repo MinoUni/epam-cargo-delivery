@@ -25,10 +25,12 @@ class UserServiceImplTest {
     private final UserDaoImpl userRepoMock = mock(UserDaoImpl.class);
     private final UserServiceImpl userService = new UserServiceImpl(userRepoMock);
     private User testUser;
+    private User testUserData;
 
     @BeforeEach
-    void setup() {
+    void setup() throws NoSuchAlgorithmException, InvalidKeySpecException {
         testUser = new User("testId", "pass");
+        testUserData = new User("testId", PasswordEncoder.hash(testUser.getPassword()));
     }
 
     @Test
@@ -42,58 +44,56 @@ class UserServiceImplTest {
     }
 
     @Test
-    void signupFailedWithUserCreateExceptionTest() throws DBException {
-        doThrow(new DBException("[TEST]:User create operation failed")).when(userRepoMock).create(any(User.class));
+    void signupFailedWithUserExceptionTest() throws DBException {
+        doThrow(new DBException("[TEST]:User  operation failed")).when(userRepoMock).save(any(User.class));
 
         var exceptionMessage = assertThrows(UserServiceException.class, () -> userService.signup(testUser));
-        assertTrue(exceptionMessage.getMessage().contains("[TEST]:User create operation failed"));
+        assertTrue(exceptionMessage.getMessage().contains("[TEST]:User  operation failed"));
 
-        verify(userRepoMock, times(1)).create(any(User.class));
+        verify(userRepoMock, times(1)).save(any(User.class));
     }
 
     @Test
     void signupSuccessfullyTest() throws DBException {
-        doNothing().when(userRepoMock).create(any(User.class));
+        doNothing().when(userRepoMock).save(any(User.class));
 
         assertDoesNotThrow(() -> userService.signup(testUser));
 
-        verify(userRepoMock, times(1)).create(any(User.class));
+        verify(userRepoMock, times(1)).save(any(User.class));
     }
 
     @Test
-    void loginSuccessfullyTest() throws DBException, NoSuchAlgorithmException, InvalidKeySpecException {
+    void loginSuccessfullyTest() throws DBException {
         when(userRepoMock.isExist(any(User.class))).thenReturn(Boolean.TRUE);
-        when(userRepoMock.getPasswordById(any(User.class))).thenReturn(PasswordEncoder.hash(testUser.getPassword()));
-        when(userRepoMock.findById(any(User.class))).thenReturn(Optional.of(testUser));
+        when(userRepoMock.findByField(any(String.class))).thenReturn(Optional.ofNullable(testUserData));
 
         var testLoggedUser = assertDoesNotThrow(() -> userService.login(testUser));
         assertEquals(testUser.getId(), testLoggedUser.getId());
 
         verify(userRepoMock, times(1)).isExist(any(User.class));
-        verify(userRepoMock, times(1)).getPasswordById(any(User.class));
-        verify(userRepoMock, times(1)).findById(any(User.class));
+        verify(userRepoMock, times(1)).findByField(any(String.class));
     }
 
     @Test
     void loginFailedWithInvalidPasswordExceptionTest() throws DBException {
         when(userRepoMock.isExist(any(User.class))).thenReturn(Boolean.TRUE);
-        when(userRepoMock.getPasswordById(any(User.class))).thenThrow(new DBException("[TEST]:No such user was found"));
+        when(userRepoMock.findByField(any(String.class))).thenThrow(new DBException("[TEST]:No such user was found"));
 
         var exceptionMessage = assertThrows(UserServiceException.class, () -> userService.login(testUser));
         assertTrue(exceptionMessage.getMessage().contains("[TEST]:No such user was found"));
 
-        verify(userRepoMock, times(1)).getPasswordById(any(User.class));
+        verify(userRepoMock, times(1)).findByField(any(String.class));
     }
 
     @Test
     void loginFailedWithInvalidPasswordResultTest() throws DBException {
         when(userRepoMock.isExist(any(User.class))).thenReturn(Boolean.TRUE);
-        when(userRepoMock.getPasswordById(any(User.class))).thenReturn("invalidPass");
+        when(userRepoMock.findByField(any(String.class))).thenReturn(Optional.ofNullable(testUser));
 
         var exceptionMessage = assertThrows(UserServiceException.class, () -> userService.login(testUser));
         assertTrue(exceptionMessage.getMessage().contains("Invalid password. Didn't match with password from db"));
 
-        verify(userRepoMock, times(1)).getPasswordById(any(User.class));
+        verify(userRepoMock, times(1)).findByField(any(String.class));
     }
 
     @Test
@@ -111,29 +111,77 @@ class UserServiceImplTest {
         when(userRepoMock.isExist(any(User.class))).thenReturn(Boolean.FALSE);
 
         var exceptionMessage = assertThrows(UserServiceException.class, () -> userService.login(testUser));
-        assertTrue(exceptionMessage.getMessage().contains(String.format("User with provided login not exists, login=%s", testUser.getId())));
+        assertTrue(exceptionMessage.getMessage().contains(String.format("User with provided login not exists, login=%s", testUser.getLogin())));
 
         verify(userRepoMock, times(1)).isExist(any(User.class));
     }
 
     @Test
     void findAllUsersSuccessfullyTest() throws DBException {
-        doReturn(List.of(testUser)).when(userRepoMock).readAllUsers();
-
-        var users = assertDoesNotThrow(userService::findAllUsers);
+        when(userRepoMock.findAllBetween(any(int.class), any(int.class))).thenReturn(List.of(testUser));
+        var users = assertDoesNotThrow(() -> userService.findAllUsers(1));
         assertTrue(users.contains(testUser));
 
-        verify(userRepoMock, times(1)).readAllUsers();
+        verify(userRepoMock, times(1)).findAllBetween(any(int.class), any(int.class));
     }
 
     @Test
     void findAllUsersFailedWithUserServiceExceptionTest() throws DBException {
-        doThrow(new DBException("[TEST]:Failed to read all users")).when(userRepoMock).readAllUsers();
-
-        var exceptionMessage = assertThrows(UserServiceException.class, userService::findAllUsers);
+        when(userRepoMock.findAllBetween(any(int.class), any(int.class))).thenThrow(new DBException("[TEST]:Failed to read all users"));
+        var exceptionMessage = assertThrows(UserServiceException.class, () -> userService.findAllUsers(1));
         assertTrue(exceptionMessage.getMessage().contains("[TEST]:Failed to read all users"));
 
-        verify(userRepoMock, times(1)).readAllUsers();
+        verify(userRepoMock, times(1)).findAllBetween(any(int.class), any(int.class));
     }
 
+    @Test
+    void getNumbOfPagesSuccessfullyTest() throws DBException {
+        int numbOfRecords = 10;
+        when(userRepoMock.countNumbOfRecords(any(String.class))).thenReturn(numbOfRecords);
+
+        var result = assertDoesNotThrow(userService::getNumbOfPages);
+        assertEquals(2, result);
+
+        verify(userRepoMock, times(1)).countNumbOfRecords(any(String.class));
+    }
+
+    @Test
+    void getNumbOfPagesFailedWithDBExceptionTest() throws DBException {
+        when(userRepoMock.countNumbOfRecords(any(String.class))).thenThrow(new DBException("[TEST]:Failed to read number of records"));
+
+        var exceptionMessage = assertThrows(UserServiceException.class, userService::getNumbOfPages);
+        assertTrue(exceptionMessage.getMessage().contains("[TEST]:Failed to read number of records"));
+
+        verify(userRepoMock, times(1)).countNumbOfRecords(any(String.class));
+    }
+
+    @Test
+    void findUserSuccessfullyTest() throws DBException {
+        when(userRepoMock.findByField(any(String.class))).thenReturn(Optional.ofNullable(testUserData));
+
+        var user = assertDoesNotThrow(() -> userService.findUser(testUser));
+        assertEquals(testUser, user);
+
+        verify(userRepoMock, times(1)).findByField(any(String.class));
+    }
+
+    @Test
+    void findUserFailedWithDBExceptionTest() throws DBException {
+        when(userRepoMock.findByField(any(String.class))).thenThrow(new DBException("[TEST]:Failed to read user from db"));
+
+        var exceptionMessage = assertThrows(UserServiceException.class, () -> userService.findUser(testUser));
+        assertTrue(exceptionMessage.getMessage().contains("[TEST]:Failed to read user from db"));
+
+        verify(userRepoMock, times(1)).findByField(any(String.class));
+    }
+
+    @Test
+    void findUserFailedWithNotFoundTest() throws DBException {
+        when(userRepoMock.findByField(any(String.class))).thenReturn(Optional.empty());
+
+        var exceptionMessage = assertThrows(UserServiceException.class, () -> userService.findUser(testUser));
+        assertTrue(exceptionMessage.getMessage().contains(String.format("User=%s not exists", testUser.getLogin())));
+
+        verify(userRepoMock, times(1)).findByField(any(String.class));
+    }
 }
