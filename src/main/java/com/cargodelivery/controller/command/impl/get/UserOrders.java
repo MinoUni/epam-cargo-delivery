@@ -4,11 +4,8 @@ import com.cargodelivery.controller.command.Command;
 import com.cargodelivery.controller.command.CommandList;
 import com.cargodelivery.dao.entity.Order;
 import com.cargodelivery.dao.entity.User;
-import com.cargodelivery.dao.impl.OrderDaoImpl;
-import com.cargodelivery.dao.impl.UserDaoImpl;
 import com.cargodelivery.exception.OrderServiceException;
 import com.cargodelivery.service.OrderService;
-import com.cargodelivery.service.impl.OrderServiceImpl;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
@@ -23,14 +20,16 @@ public class UserOrders implements Command {
     private static final String USER_PROFILE_PAGE = "profile_user.jsp";
     private final OrderService orderService;
 
-    public UserOrders() {
-        orderService = new OrderServiceImpl(new OrderDaoImpl(), new UserDaoImpl());
+    public UserOrders(OrderService orderService) {
+        this.orderService = orderService;
     }
 
     /**
+     * Look for all orders in db that user make
+     *
      * @param req  {@link HttpServletRequest}
      * @param resp {@link HttpServletResponse}
-     * @return JSP url
+     * @return JSP(view) result of the command to ui
      */
     @Override
     public String execute(HttpServletRequest req, HttpServletResponse resp) {

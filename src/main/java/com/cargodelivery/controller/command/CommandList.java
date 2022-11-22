@@ -20,7 +20,7 @@ public enum CommandList {
     USER_ORDERS(new UserOrders(new OrderServiceImpl(new OrderDaoImpl(), new UserDaoImpl()))),
     ORDER_INFO(new OrderInfo()),
     ORDER_DELETE(new OrderDelete()),
-    ORDER_PAY(new OrderPay()),
+    ORDER_PAY(new OrderPay(new OrderServiceImpl(new OrderDaoImpl(), new UserDaoImpl()))),
     ORDER_BILL(new OrderBill()),
     ORDER_APPROVE(new OrderApprove()),
     GET_ORDERS(new AllOrders()),
