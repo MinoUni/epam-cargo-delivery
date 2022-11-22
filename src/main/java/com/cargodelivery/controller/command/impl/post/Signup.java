@@ -1,12 +1,11 @@
 package com.cargodelivery.controller.command.impl.post;
 
 import com.cargodelivery.controller.command.Command;
+import com.cargodelivery.controller.command.CommandList;
 import com.cargodelivery.dao.entity.User;
 import com.cargodelivery.dao.entity.enums.UserRole;
-import com.cargodelivery.dao.impl.UserDaoImpl;
 import com.cargodelivery.exception.UserServiceException;
 import com.cargodelivery.service.UserService;
-import com.cargodelivery.service.impl.UserServiceImpl;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
@@ -23,24 +22,33 @@ import static com.cargodelivery.service.AppUtils.checkReqParam;
 public class Signup implements Command {
 
     private static final Logger LOG = LoggerFactory.getLogger(Signup.class);
-
-    private static final String ERROR_PAGE = "error.jsp";
-
     private static final String LOGIN_PAGE = "login.jsp";
-
     private final UserService userService;
 
-    public Signup() {
-        userService = new UserServiceImpl(new UserDaoImpl());
+    public Signup(UserService userService) {
+        this.userService = userService;
     }
 
+    /**
+     * Validate input data from http request.
+     * If all okay, then build user data into DTO{@link User} and try
+     * to save it into database.
+     * If succeeded redirect to login page,
+     * otherwise throw exception and redirect to error page
+     *
+     * @param req  {@link HttpServletRequest}
+     * @param res {@link HttpServletResponse}
+     * @return JSP(view) result of the command to ui
+     */
     @Override
-    public String execute(HttpServletRequest req, HttpServletResponse resp) {
+    public String execute(HttpServletRequest req, HttpServletResponse res) {
         HttpSession session = req.getSession();
         try {
-            if (!req.getParameter("password").equals(req.getParameter("confirm-password"))) {
-                LOG.warn("Requests paramName=password and paramName=confirm-password didn't matches");
-                throw new IllegalArgumentException("Requests paramName=password and paramName=confirm-password didn't matches");
+            String password = req.getParameter("password");
+            String passwordConfirm = req.getParameter("confirm-password");
+            if (!password.equals(passwordConfirm)) {
+                LOG.warn("paramName=password({}) and paramName=confirm-password({}) didn't matches", password, passwordConfirm);
+                throw new IllegalArgumentException("paramName=password and paramName=confirm-password didn't matches");
             }
             User newUser = new User(
                     checkReqParam(req, "login"),
@@ -57,7 +65,7 @@ public class Signup implements Command {
             return LOGIN_PAGE;
         } catch (UserServiceException | IllegalArgumentException | ParseException e) {
             session.setAttribute("errorMessage", e.getMessage());
-            return ERROR_PAGE;
+            return CommandList.ERROR_PAGE.getCommand().execute(req, res);
         }
     }
 }
