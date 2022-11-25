@@ -24,7 +24,7 @@ public class OrderInfo implements Command {
     }
 
     /**
-     * Read details about order from db by id
+     * Read details about {@link Order} from DB by id
      * and display it
      *
      * @param req  {@link HttpServletRequest}
