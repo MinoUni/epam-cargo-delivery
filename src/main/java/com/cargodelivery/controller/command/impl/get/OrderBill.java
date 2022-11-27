@@ -4,15 +4,11 @@ import com.cargodelivery.controller.command.Command;
 import com.cargodelivery.controller.command.CommandList;
 import com.cargodelivery.dao.entity.Order;
 import com.cargodelivery.dao.entity.User;
-import com.cargodelivery.dao.impl.OrderDaoImpl;
-import com.cargodelivery.dao.impl.UserDaoImpl;
 import com.cargodelivery.exception.OrderServiceException;
 import com.cargodelivery.exception.UserServiceException;
 import com.cargodelivery.service.AppUtils;
 import com.cargodelivery.service.OrderService;
 import com.cargodelivery.service.UserService;
-import com.cargodelivery.service.impl.OrderServiceImpl;
-import com.cargodelivery.service.impl.UserServiceImpl;
 import com.itextpdf.text.*;
 import com.itextpdf.text.pdf.FontSelector;
 import com.itextpdf.text.pdf.PdfPCell;
@@ -29,33 +25,35 @@ import java.io.IOException;
 public class OrderBill implements Command {
 
     private static final Logger LOG = LoggerFactory.getLogger(OrderBill.class);
+    private static final String USER_PROFILE_PAGE = "profile_user.jsp";
     private final OrderService orderService;
     private final UserService userService;
 
-    public OrderBill() {
-        orderService = new OrderServiceImpl(new OrderDaoImpl(), new UserDaoImpl());
-        userService = new UserServiceImpl(new UserDaoImpl());
+    public OrderBill(OrderService orderService, UserService userService) {
+        this.orderService = orderService;
+        this.userService = userService;
     }
 
     /**
-     * Process code of one of the command from {@link CommandList}
+     * Get {@link User} and {@link Order} details and build pdf doc
+     * about purchase after payment process
      *
      * @param req  {@link HttpServletRequest}
-     * @param resp {@link HttpServletResponse}
+     * @param res {@link HttpServletResponse}
      * @return JSP url
      */
     @Override
-    public String execute(HttpServletRequest req, HttpServletResponse resp) {
+    public String execute(HttpServletRequest req, HttpServletResponse res) {
         HttpSession session = req.getSession();
         try {
             int orderId = AppUtils.parseReqParam(req, "orderId");
             User user = userService.findUser((User) session.getAttribute("user"));
             Order order = orderService.findOrder(orderId);
 
-            resp.setContentType("application/pdf");
+            res.setContentType("application/pdf");
 
             Document document = new Document();
-            PdfWriter.getInstance(document, resp.getOutputStream());
+            PdfWriter.getInstance(document, res.getOutputStream());
 
             document.open();
 
@@ -142,11 +140,11 @@ public class OrderBill implements Command {
 
             document.close();
 
-            return "profile_user.jsp";
+            return USER_PROFILE_PAGE;
         } catch (OrderServiceException | UserServiceException | IllegalArgumentException | IOException | DocumentException e) {
             LOG.error(e.getMessage(), e);
             session.setAttribute("errorMessage", e.getMessage());
-            return CommandList.ERROR_PAGE.getCommand().execute(req, resp);
+            return CommandList.ERROR_PAGE.getCommand().execute(req, res);
         }
     }
 

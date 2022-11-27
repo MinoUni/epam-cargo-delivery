@@ -19,6 +19,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.Date;
 
 import static com.cargodelivery.service.AppUtils.checkReqParam;
 
@@ -46,19 +47,21 @@ public class CreateOrder implements Command {
         HttpSession session = req.getSession();
         User user = (User) session.getAttribute("user");
         try {
+            Cargo cargo = new Cargo(
+                    Double.parseDouble(checkReqParam(req, "length")),
+                    Double.parseDouble(checkReqParam(req, "width")),
+                    Double.parseDouble(checkReqParam(req, "height")),
+                    Double.parseDouble(checkReqParam(req, "weight"))
+            );
+            Date registrationDate = new SimpleDateFormat("yyyy-MM-dd")
+                    .parse(LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+            OrderState state = OrderState.REGISTERED;
             Order order = new Order(
                     user.getId(),
                     String.format("%s-%s", checkReqParam(req, "routeStart"), checkReqParam(req, "routeEnd")),
-                    new Cargo(
-                            Double.parseDouble(checkReqParam(req, "length")),
-                            Double.parseDouble(checkReqParam(req, "width")),
-                            Double.parseDouble(checkReqParam(req, "height")),
-                            Double.parseDouble(checkReqParam(req, "weight"))
-                    ),
-                    new SimpleDateFormat("yyyy-MM-dd")
-                            .parse(LocalDate.now()
-                                    .format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))),
-                    OrderState.REGISTERED,
+                    cargo,
+                    registrationDate,
+                    state,
                     BigDecimal.valueOf(Double.parseDouble(checkReqParam(req, "price")))
             );
             orderService.saveOrder(order);

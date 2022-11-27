@@ -2,6 +2,7 @@ package com.cargodelivery.controller.command;
 
 import com.cargodelivery.service.AppUtils;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,8 +18,9 @@ public final class CommandFactory {
             LOG.info(String.format("Acquired correct command=%s", commandName));
             return CommandList.valueOf(commandName).getCommand();
         } catch (IllegalArgumentException e) {
+            HttpSession session = req.getSession();
             LOG.error(String.format("Acquired invalid command=%s, redirect to error page", commandName));
-            req.getSession().setAttribute("errorMessage", String.format("Acquired invalid command=%s, redirect to error page", commandName));
+            session.setAttribute("errorMessage", String.format("Acquired invalid command=%s, redirect to error page", commandName));
             return CommandList.ERROR_PAGE.getCommand();
         }
     }

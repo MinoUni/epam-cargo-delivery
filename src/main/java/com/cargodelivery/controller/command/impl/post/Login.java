@@ -25,11 +25,11 @@ public class Login implements Command {
 
     /**
      * @param req  {@link HttpServletRequest}
-     * @param resp {@link HttpServletResponse}
+     * @param res {@link HttpServletResponse}
      * @return JSP(view) result of the command to ui
      */
     @Override
-    public String execute(HttpServletRequest req, HttpServletResponse resp) {
+    public String execute(HttpServletRequest req, HttpServletResponse res) {
         HttpSession session = req.getSession();
         try {
             User userToLogin = new User(checkReqParam(req, "login"), checkReqParam(req, "password"));
@@ -40,7 +40,7 @@ public class Login implements Command {
         } catch (IllegalArgumentException | UserServiceException e) {
             LOG.error(e.getMessage(), e);
             session.setAttribute("errorMessage", e.getMessage());
-            return CommandList.ERROR_PAGE.getCommand().execute(req, resp);
+            return CommandList.ERROR_PAGE.getCommand().execute(req, res);
         }
     }
 }

@@ -174,10 +174,10 @@ public class OrderDaoImpl implements OrderDao {
         prepStat.setDate(3, new Date(order.getRegistrationDate().getTime()));
         prepStat.setBigDecimal(4, order.getPrice());
         prepStat.setString(5, order.getState().toString());
-        prepStat.setDouble(6, order.getCargo().getLength());
-        prepStat.setDouble(7, order.getCargo().getWidth());
-        prepStat.setDouble(8, order.getCargo().getHeight());
-        prepStat.setDouble(9, order.getCargo().getWeight());
+        prepStat.setDouble(6, order.getCargo().length());
+        prepStat.setDouble(7, order.getCargo().width());
+        prepStat.setDouble(8, order.getCargo().height());
+        prepStat.setDouble(9, order.getCargo().weight());
     }
 
 }

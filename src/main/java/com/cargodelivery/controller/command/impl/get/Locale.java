@@ -18,12 +18,14 @@ public class Locale implements Command {
     private static final String ADMIN_PROFILE_PAGE = "profile_admin.jsp";
 
     /**
+     * Switch webapp localization
+     *
      * @param req  {@link HttpServletRequest}
-     * @param resp {@link HttpServletResponse}
+     * @param res {@link HttpServletResponse}
      * @return JSP url
      */
     @Override
-    public String execute(HttpServletRequest req, HttpServletResponse resp) {
+    public String execute(HttpServletRequest req, HttpServletResponse res) {
         HttpSession session = req.getSession();
         try {
             String page = checkReqParam(req, "page");
@@ -41,13 +43,13 @@ public class Locale implements Command {
                 }
                 default -> {
                     LOG.error("Invalid page={}", page);
-                    return CommandList.ERROR_PAGE.getCommand().execute(req, resp);
+                    return CommandList.ERROR_PAGE.getCommand().execute(req, res);
                 }
             }
         } catch (IllegalArgumentException e) {
             session.setAttribute("errorMessage", e.getMessage());
             LOG.error(e.getMessage(), e);
-            return CommandList.ERROR_PAGE.getCommand().execute(req, resp);
+            return CommandList.ERROR_PAGE.getCommand().execute(req, res);
         }
     }
 }

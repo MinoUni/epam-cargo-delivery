@@ -14,19 +14,19 @@ import java.io.IOException;
 public class FrontController extends HttpServlet {
 
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        String forward = handleHttpRequest(req, resp);
-        req.getRequestDispatcher(forward).forward(req, resp);
+    protected void doGet(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
+        String forward = handleHttpRequest(req, res);
+        req.getRequestDispatcher(forward).forward(req, res);
     }
 
     @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        String redirect = handleHttpRequest(req, resp);
-        resp.sendRedirect(redirect);
+    protected void doPost(HttpServletRequest req, HttpServletResponse res) throws IOException {
+        String redirect = handleHttpRequest(req, res);
+        res.sendRedirect(redirect);
     }
 
-    private String handleHttpRequest(HttpServletRequest req, HttpServletResponse resp) {
+    private String handleHttpRequest(HttpServletRequest req, HttpServletResponse res) {
         Command command = CommandFactory.getCommand(req);
-        return command.execute(req, resp);
+        return command.execute(req, res);
     }
 }

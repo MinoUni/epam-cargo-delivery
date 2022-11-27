@@ -28,11 +28,11 @@ public class UserOrders implements Command {
      * Look for all orders in db that user make
      *
      * @param req  {@link HttpServletRequest}
-     * @param resp {@link HttpServletResponse}
+     * @param res {@link HttpServletResponse}
      * @return JSP(view) result of the command to ui
      */
     @Override
-    public String execute(HttpServletRequest req, HttpServletResponse resp) {
+    public String execute(HttpServletRequest req, HttpServletResponse res) {
         HttpSession session = req.getSession();
         User user = (User) session.getAttribute("user");
         try {
@@ -43,7 +43,7 @@ public class UserOrders implements Command {
         } catch (OrderServiceException e) {
             LOG.error(e.getMessage(), e);
             session.setAttribute("errorMessage", e.getMessage());
-            return CommandList.ERROR_PAGE.getCommand().execute(req, resp);
+            return CommandList.ERROR_PAGE.getCommand().execute(req, res);
         }
     }
 }

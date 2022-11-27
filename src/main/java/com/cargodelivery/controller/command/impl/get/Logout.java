@@ -14,7 +14,7 @@ public class Logout implements Command {
     private static final String INDEX_PAGE = "index.jsp";
 
     @Override
-    public String execute(HttpServletRequest req, HttpServletResponse resp) {
+    public String execute(HttpServletRequest req, HttpServletResponse res) {
         HttpSession session = req.getSession();
         var user = (User) session.getAttribute("user");
         session.removeAttribute("user");

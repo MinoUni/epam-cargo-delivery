@@ -10,11 +10,11 @@ public class ErrorPage implements Command {
 
     /**
      * @param req  {@link HttpServletRequest}
-     * @param resp {@link HttpServletResponse}
+     * @param res {@link HttpServletResponse}
      * @return JSP name
      */
     @Override
-    public String execute(HttpServletRequest req, HttpServletResponse resp) {
+    public String execute(HttpServletRequest req, HttpServletResponse res) {
         return ERROR_PAGE;
     }
 }

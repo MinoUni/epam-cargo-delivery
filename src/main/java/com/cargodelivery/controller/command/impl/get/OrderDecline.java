@@ -12,25 +12,34 @@ import jakarta.servlet.http.HttpSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class OrderBlock implements Command {
+public class OrderDecline implements Command {
 
-    private static final Logger LOG = LoggerFactory.getLogger(OrderBlock.class);
+    private static final Logger LOG = LoggerFactory.getLogger(OrderDecline.class);
     private final OrderService orderService;
-    private final Command userOrders;
+    private final Command allOrders;
 
-    public OrderBlock(OrderService orderService, Command command, OrderService orderService1, Command userOrders) {
-        this.orderService = orderService1;
-        this.userOrders = userOrders;
+    public OrderDecline(OrderService orderService, Command command) {
+        this.orderService = orderService;
+        this.allOrders = command;
     }
 
+    /**
+     * Manager command to update status for registered user's orders
+     * Process code of one of the command from {@link CommandList}
+     *
+     * @param req  {@link HttpServletRequest}
+     * @param res {@link HttpServletResponse}
+     * @return JSP url
+     */
     @Override
     public String execute(HttpServletRequest req, HttpServletResponse res) {
         HttpSession session = req.getSession();
+        final OrderState state = OrderState.DECLINED;
         try {
             int orderId = AppUtils.parseReqParam(req, "orderId");
-            orderService.updateState(orderId, OrderState.WAITING_FOR_PAYMENT);
-            LOG.trace("Update orderState={} for orderId={}", OrderState.WAITING_FOR_PAYMENT, orderId);
-            return userOrders.execute(req, res);
+            orderService.updateState(orderId, state);
+            LOG.trace("Update orderState={} for orderId={}", state, orderId);
+            return allOrders.execute(req, res);
         } catch (OrderServiceException | IllegalArgumentException e) {
             LOG.error(e.getMessage(), e);
             session.setAttribute("errorMessage", e.getMessage());
