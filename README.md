@@ -37,4 +37,6 @@ ___
 * Switch site language
 
 ## :page_facing_up: Database structure:
-![database](https://drive.google.com/uc?export=view&id=1FStr_Cabuc0Xxo218GXL0HVAsSApryIx)
+<p align="center">
+    <img src="https://drive.google.com/uc?export=view&id=1FStr_Cabuc0Xxo218GXL0HVAsSApryIx">
+</p>
