@@ -111,7 +111,7 @@
                                             </c:if>
                                             <c:if test="${order.state eq OrderState.WAITING_FOR_PAYMENT or
                                                           order.state eq OrderState.REGISTERED}">
-                                                <a href="controller?command=ORDER_BLOCK&orderId=${order.id}"
+                                                <a href="controller?command=ORDER_DECLINE&orderId=${order.id}"
                                                    class="del_action">Block</a>
                                             </c:if>
                                         </div>
