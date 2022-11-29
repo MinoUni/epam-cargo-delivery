@@ -5,8 +5,8 @@ import com.cargodelivery.dao.entity.Order;
 import com.cargodelivery.dao.entity.User;
 import com.cargodelivery.dao.entity.enums.OrderState;
 import com.cargodelivery.dao.entity.enums.UserRole;
-import com.cargodelivery.dao.impl.OrderDaoImpl;
-import com.cargodelivery.dao.impl.UserDaoImpl;
+import com.cargodelivery.dao.impl.OrderRepoImpl;
+import com.cargodelivery.dao.impl.UserRepoImpl;
 import com.cargodelivery.exception.DBException;
 import com.cargodelivery.exception.OrderServiceException;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,8 +25,8 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class OrderServiceImplTest {
 
-    private final OrderDaoImpl orderRepoMock = mock(OrderDaoImpl.class);
-    private final UserDaoImpl userRepoMock = mock(UserDaoImpl.class);
+    private final OrderRepoImpl orderRepoMock = mock(OrderRepoImpl.class);
+    private final UserRepoImpl userRepoMock = mock(UserRepoImpl.class);
     private final OrderServiceImpl orderService = new OrderServiceImpl(orderRepoMock, userRepoMock);
     private Cargo testCargo;
     private User testUser;

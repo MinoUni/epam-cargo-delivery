@@ -1,7 +1,7 @@
 package com.cargodelivery.service.impl;
 
 import com.cargodelivery.dao.entity.User;
-import com.cargodelivery.dao.impl.UserDaoImpl;
+import com.cargodelivery.dao.impl.UserRepoImpl;
 import com.cargodelivery.exception.DBException;
 import com.cargodelivery.exception.UserServiceException;
 import com.cargodelivery.security.PasswordEncoder;
@@ -22,7 +22,7 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class UserServiceImplTest {
 
-    private final UserDaoImpl userRepoMock = mock(UserDaoImpl.class);
+    private final UserRepoImpl userRepoMock = mock(UserRepoImpl.class);
     private final UserServiceImpl userService = new UserServiceImpl(userRepoMock);
     private User testUser;
     private User testUserData;
