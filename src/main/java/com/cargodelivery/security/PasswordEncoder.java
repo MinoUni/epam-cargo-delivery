@@ -16,6 +16,14 @@ public class PasswordEncoder {
 
     private PasswordEncoder() {}
 
+    /**
+     * Hash user's password
+     *
+     * @param password user's password from http req
+     * @return user's hashed password
+     * @throws NoSuchAlgorithmException invalid hashing algorithm
+     * @throws InvalidKeySpecException invalid key details
+     */
     public static String hash(String password) throws NoSuchAlgorithmException, InvalidKeySpecException {
         SecretKeyFactory secretKeyFactory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
         PBEKeySpec keySpec = new PBEKeySpec(password.toCharArray(), SALT.getBytes(), ITERATIONS, HASH_BYTE_SIZE);

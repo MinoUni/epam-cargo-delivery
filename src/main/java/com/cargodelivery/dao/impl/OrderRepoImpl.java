@@ -1,7 +1,7 @@
 package com.cargodelivery.dao.impl;
 
 import com.cargodelivery.dao.ConnPool;
-import com.cargodelivery.dao.OrderDao;
+import com.cargodelivery.dao.OrderRepository;
 import com.cargodelivery.dao.entity.Cargo;
 import com.cargodelivery.dao.entity.Order;
 import com.cargodelivery.dao.entity.User;
@@ -19,9 +19,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-public class OrderDaoImpl implements OrderDao {
+public class OrderRepoImpl implements OrderRepository {
 
-    private static final Logger LOG = LogManager.getLogger(OrderDaoImpl.class);
+    private static final Logger LOG = LogManager.getLogger(OrderRepoImpl.class);
 
     @Override
     public void save(Order order) throws DBException {
@@ -174,10 +174,10 @@ public class OrderDaoImpl implements OrderDao {
         prepStat.setDate(3, new Date(order.getRegistrationDate().getTime()));
         prepStat.setBigDecimal(4, order.getPrice());
         prepStat.setString(5, order.getState().toString());
-        prepStat.setDouble(6, order.getCargo().length());
-        prepStat.setDouble(7, order.getCargo().width());
-        prepStat.setDouble(8, order.getCargo().height());
-        prepStat.setDouble(9, order.getCargo().weight());
+        prepStat.setDouble(6, order.getCargo().getLength());
+        prepStat.setDouble(7, order.getCargo().getWidth());
+        prepStat.setDouble(8, order.getCargo().getHeight());
+        prepStat.setDouble(9, order.getCargo().getHeight());
     }
 
 }

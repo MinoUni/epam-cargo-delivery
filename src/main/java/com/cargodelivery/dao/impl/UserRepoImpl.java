@@ -16,9 +16,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-public class UserDaoImpl implements UserRepository {
+public class UserRepoImpl implements UserRepository {
 
-    private static final Logger LOG = LoggerFactory.getLogger(UserDaoImpl.class);
+    private static final Logger LOG = LoggerFactory.getLogger(UserRepoImpl.class);
 
     @Override
     public void save(User user) throws DBException {

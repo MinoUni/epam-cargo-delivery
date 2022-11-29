@@ -39,7 +39,20 @@ public interface UserService {
      */
     List<User> findAllUsers(int page) throws UserServiceException;
 
+    /**
+     * Count number of unique records in orders table
+     *
+     * @return number of unique records
+     * @throws UserServiceException error occur in database
+     */
     int getNumbOfPages() throws UserServiceException;
 
+    /**
+     * Look for details about user in database by user login
+     *
+     * @param user {@link User} DTO subclass of {@link com.cargodelivery.dao.entity.Model}
+     * @return {@link User} DTO subclass of {@link com.cargodelivery.dao.entity.Model}
+     * @throws UserServiceException error occur in database
+     */
     User findUser(User user) throws UserServiceException;
 }
