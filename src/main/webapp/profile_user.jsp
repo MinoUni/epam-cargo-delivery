@@ -4,6 +4,7 @@
 <%@ page import="com.cargodelivery.dao.entity.User" %>
 <%@ page import="com.cargodelivery.dao.entity.enums.UserRole" %>
 <%@ page import="com.cargodelivery.dao.entity.enums.OrderState" %>
+<%@ page import="com.cargodelivery.dao.entity.Cargo" %>
 <!DOCTYPE html>
 <html lang="en">
 <head>
