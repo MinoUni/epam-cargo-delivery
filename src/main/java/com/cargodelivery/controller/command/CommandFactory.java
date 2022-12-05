@@ -12,6 +12,13 @@ public final class CommandFactory {
 
     private CommandFactory() {}
 
+    /**
+     * Verify command existence from user http req
+     * In case invalid command redirect to error page
+     *
+     * @param req {@link HttpServletRequest}
+     * @return one of the command from {@link CommandList}
+     */
     public static Command getCommand(HttpServletRequest req) {
         String commandName = AppUtils.checkReqParam(req, "command");
         try {

@@ -100,7 +100,7 @@
 <!-- Cargo calculator section -->
 <%//TODO: REFACTOR CALC FORM + JS FORMULA%>
 <section class="calc" id="calc">
-    <form action="controller?command=CREATE_ORDER" method="post" id="form">
+    <form action="controller?command=CREATE_ORDER" method="post" id="calcForm">
         <fieldset>
             <legend><fmt:message key="index.section.calc.legend"/></legend>
 
@@ -113,18 +113,7 @@
                 <label for="routeEnd"><fmt:message key="index.section.calc.label.route_end"/></label>
                 <input type="text" name="routeEnd" id="routeEnd" required/>
             </div>
-
-<%--            <div class="field">--%>
-<%--                <label for="route"><fmt:message key="index.section.calc.label.route_end"/></label>--%>
-<%--                <select class="select" name="" id="route" required>--%>
-<%--                    <option selected disabled hidden>Choose route</option>--%>
-<%--                    <option value="1">Kyiv - Dnipro</option>--%>
-<%--                    <option value="2">Vinnytsia - Kyiv</option>--%>
-<%--                    <option value="3">Khmelnytskyi - Kharkiv</option>--%>
-<%--                    <option value="4">Lviv - Kyiv</option>--%>
-<%--                </select>--%>
-<%--            </div>--%>
-
+            
             <div class="cargo_det">
                 <p><fmt:message key="index.section.calc.p.cargo_details"/></p>
                 <div class="field">
@@ -151,14 +140,14 @@
             </div>
             <c:if test="${sessionScope.user != null}">
                 <div class="btn">
-                    <button type="submit"><fmt:message key="index.section.calc.btn"/></button>
+                    <button type="submit"><fmt:message key="index.section.calc.btn.submit"/></button>
                 </div>
             </c:if>
             <div class="btn">
-                <button type="button" onclick="calcDeliveryCost()">Calc</button>
+                <button type="button" onclick="calcDeliveryCost()"><fmt:message key="index.section.calc.btn.calculate"/></button>
             </div>
             <div class="btn">
-                <button type="reset">Clear</button>
+                <button type="reset"><fmt:message key="index.section.calc.btn.clear"/></button>
             </div>
         </fieldset>
     </form>

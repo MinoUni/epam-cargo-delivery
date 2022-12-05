@@ -120,7 +120,7 @@
                                                placeholder="<fmt:message key="profile.user.table.thead.th.input.6"/>"
                                         >
                                     </th>
-                                    <th><fmt:message key="profile.user.table.thead.th.input.9"/></th>
+                                    <th><fmt:message key="profile.user.table.thead.th.input.7"/></th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -146,7 +146,7 @@
                                                 </c:if>
                                                 <c:if test="${order.state eq OrderState.PAID}">
                                                     <a href="controller?command=ORDER_BILL&orderId=${order.id}"
-                                                        class="bill_action">bill</a>
+                                                        class="bill_action"><fmt:message key="profile.user.table.tbody.action.bill"/></a>
                                                 </c:if>
                                             </div>
                                         </td>

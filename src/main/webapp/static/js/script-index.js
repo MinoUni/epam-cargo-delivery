@@ -21,6 +21,9 @@ function calcDeliveryCost() {
 	}
 }
 
+/**
+ * Prevent form submit before order price calculation
+ */
 calcForm.addEventListener("submit", (e) => {
 	e.preventDefault();
 	calcDeliveryCost();
