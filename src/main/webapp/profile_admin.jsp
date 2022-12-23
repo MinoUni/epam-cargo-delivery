@@ -16,7 +16,11 @@
     <link href="static/css/style-preloader.css" rel="stylesheet"/>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css" rel="stylesheet"/>
     <link href="https://unpkg.com/boxicons@2.1.2/css/boxicons.min.css" rel="stylesheet"/>
+
     <title>Cargo-Delivery | A-Profile ${sessionScope.user.login}</title>
+
+    <fmt:setLocale value="${sessionScope.locale}" scope="session" />
+    <fmt:setBundle basename="local" />
 </head>
 <body>
 <%
@@ -41,9 +45,9 @@
       </span>
     <!-- Navbar panel -->
     <nav class="navbar">
-        <a href="profile_admin.jsp">Profile</a>
-        <a href="controller?command=GET_USERS&currentPage=1">Load Users</a>
-        <a href="controller?command=GET_ORDERS&currentPage=1">Load Orders</a>
+        <a href="profile_admin.jsp"><fmt:message key="profile.admin.navbar.profile"/></a>
+        <a href="controller?command=GET_USERS&currentPage=1"><fmt:message key="profile.admin.navbar.users"/></a>
+        <a href="controller?command=GET_ORDERS&currentPage=1"><fmt:message key="profile.admin.navbar.orders"/></a>
     </nav>
     <div class="icons">
         <div class="theme">
@@ -74,7 +78,7 @@
     <form>
         <div class="table">
             <div class="table_header">
-                <p>Admin com<span class="yellow">mand result</span></p>
+                <p><fmt:message key="profile.admin.table.header.1"/><span class="yellow"><fmt:message key="profile.admin.table.header.2"/></span></p>
             </div>
             <c:choose>
 
@@ -83,14 +87,44 @@
                         <table class="table-sort">
                             <thead>
                             <tr>
-                                <th><input type="text" class="search-input" placeholder="Order id"></th>
-                                <th><input type="text" class="search-input" placeholder="User id"></th>
-                                <th><input type="text" class="search-input" placeholder="Route"></th>
-                                <th><input type="text" class="search-input" placeholder="Registration date"></th>
-                                <th><input type="text" class="search-input" placeholder="Delivery date"></th>
-                                <th><input type="text" class="search-input" placeholder="Price"></th>
-                                <th><input type="text" class="search-input" placeholder="State"></th>
-                                <th>Actions</th>
+                                <th>
+                                    <input type="text"
+                                           class="search-input"
+                                           placeholder="<fmt:message key="profile.admin.table.thead.th.input.1"/>">
+                                </th>
+                                <th>
+                                    <input type="text"
+                                           class="search-input"
+                                           placeholder="<fmt:message key="profile.admin.table.thead.th.input.2"/>">
+                                </th>
+                                <th>
+                                    <input type="text"
+                                           class="search-input"
+                                           placeholder="<fmt:message key="profile.admin.table.thead.th.input.3"/>">
+                                </th>
+                                <th>
+                                    <input type="text"
+                                           class="search-input"
+                                           placeholder="<fmt:message key="profile.admin.table.thead.th.input.4"/>">
+                                </th>
+                                <th>
+                                    <input type="text"
+                                           class="search-input"
+                                           placeholder="<fmt:message key="profile.admin.table.thead.th.input.5"/>">
+                                </th>
+                                <th>
+                                    <input type="text"
+                                           class="search-input"
+                                           placeholder="<fmt:message key="profile.admin.table.thead.th.input.6"/>">
+                                </th>
+                                <th>
+                                    <input type="text"
+                                           class="search-input"
+                                           placeholder="<fmt:message key="profile.admin.table.thead.th.input.7"/>">
+                                </th>
+                                <th>
+                                    <fmt:message key="profile.admin.table.thead.th.input.8"/>
+                                </th>
                             </tr>
                             </thead>
                             <tbody>
@@ -106,13 +140,13 @@
                                     <td>
                                         <div class="actions">
                                             <c:if test="${order.state eq OrderState.REGISTERED}">
-                                                <a href="controller?command=ORDER_APPROVE&orderId${order.id}"
-                                                   class="info_action">Approve</a>
+                                                <a href="controller?command=ORDER_APPROVE&orderId=${order.id}&currentPage=${sessionScope.currentPage}"
+                                                   class="info_action"><fmt:message key="profile.admin.table.tbody.action.approve"/></a>
                                             </c:if>
                                             <c:if test="${order.state eq OrderState.WAITING_FOR_PAYMENT or
                                                           order.state eq OrderState.REGISTERED}">
-                                                <a href="controller?command=ORDER_DECLINE&orderId=${order.id}"
-                                                   class="del_action">Block</a>
+                                                <a href="controller?command=ORDER_DECLINE&orderId=${order.id}&currentPage=${sessionScope.currentPage}"
+                                                   class="del_action"><fmt:message key="profile.admin.table.tbody.action.block"/></a>
                                             </c:if>
                                         </div>
                                     </td>
@@ -139,12 +173,12 @@
                         <table class="table-sort">
                             <thead>
                             <tr>
-                                <th><input type="text" class="search-input" placeholder="User"></th>
-                                <th><input type="text" class="search-input" placeholder="Name"></th>
-                                <th><input type="text" class="search-input" placeholder="Surname"></th>
-                                <th><input type="text" class="search-input" placeholder="Email"></th>
-                                <th><input type="text" class="search-input" placeholder="Registration date"></th>
-                                <th><input type="text" class="search-input" placeholder="Role"></th>
+                                <th><input type="text" class="search-input" placeholder="<fmt:message key="profile.admin.table.users.thead.th.input.1"/>"></th>
+                                <th><input type="text" class="search-input" placeholder="<fmt:message key="profile.admin.table.users.thead.th.input.2"/>"></th>
+                                <th><input type="text" class="search-input" placeholder="<fmt:message key="profile.admin.table.users.thead.th.input.3"/>"></th>
+                                <th><input type="text" class="search-input" placeholder="<fmt:message key="profile.admin.table.users.thead.th.input.4"/>"></th>
+                                <th><input type="text" class="search-input" placeholder="<fmt:message key="profile.admin.table.users.thead.th.input.5"/>"></th>
+                                <th><input type="text" class="search-input" placeholder="<fmt:message key="profile.admin.table.users.thead.th.input.6"/>"></th>
                             </tr>
                             </thead>
                             <tbody>
@@ -174,7 +208,7 @@
                     </div>
                 </c:when>
                 <c:otherwise>
-                    <p class="empty">No command was used!</p>
+                    <p class="empty"><fmt:message key="profile.admin.table.empty"/>"></p>
                 </c:otherwise>
             </c:choose>
         </div>

@@ -18,6 +18,7 @@
     <link href="https://unpkg.com/boxicons@2.1.2/css/boxicons.min.css" rel="stylesheet"/>
 
     <title>Cargo-Delivery | U-Profile ${sessionScope.user.login}</title>
+
     <fmt:setLocale value="${sessionScope.locale}" scope="session" />
     <fmt:setBundle basename="local" />
 </head>
