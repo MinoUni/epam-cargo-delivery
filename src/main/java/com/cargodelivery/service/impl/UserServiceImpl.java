@@ -9,6 +9,7 @@ import com.cargodelivery.service.UserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.math.BigDecimal;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.List;
@@ -89,6 +90,17 @@ public class UserServiceImpl implements UserService {
                 throw new UserServiceException(String.format("User=%s not exists", user.getLogin()));
             }
             return userDetails.get();
+        } catch (DBException e) {
+            LOG.error(e.getMessage(), e);
+            throw new UserServiceException(e.getMessage());
+        }
+    }
+
+    @Override
+    public void addBalance(User user) throws UserServiceException {
+        try {
+            user.setBalance(user.getBalance().add(BigDecimal.valueOf(10_000)));
+            userRepository.update(user);
         } catch (DBException e) {
             LOG.error(e.getMessage(), e);
             throw new UserServiceException(e.getMessage());

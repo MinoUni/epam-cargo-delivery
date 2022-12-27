@@ -44,7 +44,7 @@
         <a href="profile_user.jsp"><fmt:message key="profile.user.navbar.profile"/></a>
         <a href="controller?command=USER_ORDERS"><fmt:message key="profile.user.navbar.orders"/></a>
         <a href=""><fmt:message key="profile.user.navbar.download.orders"/></a>
-        <a href=""><fmt:message key="profile.user.navbar.balance"/></a>
+        <a href="controller?command=ADD_BALANCE"><fmt:message key="profile.user.navbar.balance"/></a>
     </nav>
     <div class="icons">
         <div class="theme">

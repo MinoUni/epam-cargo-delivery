@@ -40,7 +40,8 @@ public enum CommandList {
             new AllOrders(new OrderServiceImpl(new OrderRepoImpl(), new UserRepoImpl())))),
 
     GET_ORDERS(new AllOrders(new OrderServiceImpl(new OrderRepoImpl(), new UserRepoImpl()))),
-    GET_USERS(new AllUsers(new UserServiceImpl(new UserRepoImpl())));
+    GET_USERS(new AllUsers(new UserServiceImpl(new UserRepoImpl()))),
+    ADD_BALANCE(new AddBalance(new UserServiceImpl(new UserRepoImpl())));
 
     private final Command command;
 

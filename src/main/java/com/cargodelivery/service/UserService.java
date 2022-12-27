@@ -55,4 +55,12 @@ public interface UserService {
      * @throws UserServiceException error occur in database
      */
     User findUser(User user) throws UserServiceException;
+
+    /**
+     * Updates balance for user
+     *
+     * @param user {@link User} DTO subclass of {@link com.cargodelivery.dao.entity.Model}
+     * @throws UserServiceException error occur in database
+     */
+    void addBalance(User user) throws UserServiceException;
 }
